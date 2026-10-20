@@ -26,8 +26,10 @@ py() { python3 "$@"; }
 
 # ---- the test brand: Google fonts with Ukrainian letters (the real brand fonts are licensed, not in a public repo) ----
 fonts() {
-  curl -fsSL -o "$REELS_HOME/fonts/Montserrat.ttf" "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf"
-  curl -fsSL -o "$REELS_HOME/fonts/Lora-Italic.ttf" "https://raw.githubusercontent.com/google/fonts/main/ofl/lora/Lora-Italic%5Bwght%5D.ttf"
+  # curl.exe can't write into a Cyrillic folder on an English Windows: download from inside it
+  ( cd "$REELS_HOME/fonts" && curl -fsSL -o Montserrat.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf" \
+    && curl -fsSL -o Lora-Italic.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/lora/Lora-Italic%5Bwght%5D.ttf" )
+  [ -s "$REELS_HOME/fonts/Montserrat.ttf" ] && [ -s "$REELS_HOME/fonts/Lora-Italic.ttf" ] || return 1
   local F; F="$(wp "$REELS_HOME/fonts")"; local DELIVER="~/Videos/Reels"; [ "$WIN" = 1 ] || DELIVER="$(wp "$REELS_HOME/delivered")"
   cat > "$REELS_HOME/brand.json" <<JSON
 {"name": "Тест", "language": "uk", "resolution": [1080, 1920], "pacing": "natural", "graphics": "balanced", "max_seconds": 90,
@@ -44,7 +46,7 @@ JSON
 }
 # a talking-head stand-in: a photo with a face (OpenCV's own sample) + the generated Ukrainian speech
 clip() {
-  curl -fsSL -o "$OUTD/face.jpg" "https://raw.githubusercontent.com/opencv/opencv/4.x/samples/data/messi5.jpg"
+  ( cd "$OUTD" && curl -fsSL -o face.jpg "https://raw.githubusercontent.com/opencv/opencv/4.x/samples/data/messi5.jpg" )
   ffmpeg -v error -y -loop 1 -framerate 30 -i "$OUTD/face.jpg" -i "$FIX/speech.m4a" \
     -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='1+0.0004*on':d=1:s=1080x1920:fps=30" \
     -shortest -c:v libx264 -pix_fmt yuv420p -preset veryfast -c:a aac "$REEL/raw.mp4"
