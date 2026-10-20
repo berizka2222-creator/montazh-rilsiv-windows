@@ -44,7 +44,7 @@ if DETECT: sys.exit(0 if found else 3)
 # 2. pauses, via silencedetect on the cleaned voice. The threshold sits just above THIS clip's background noise
 #    (outdoor or noisy rooms never reach a fixed -40 dB, so a fixed threshold finds nothing).
 import array, math, wave
-wf = wave.open(str(voice)); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes()))
+wf = wave.open(str(voice)); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()
 hop = int(sr * 0.05)
 lev = sorted(20 * math.log10(max(1.0, math.sqrt(sum(x * x for x in pcm[i:i + hop:4]) / (hop / 4))) / 32768)
              for i in range(0, len(pcm) - hop, hop))

@@ -15,7 +15,7 @@ audio = reel / edl.get("audio", "voice.wav")
 with tempfile.TemporaryDirectory() as tmp:
     wav = Path(tmp) / "a.wav"
     subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(audio), "-ac", "1", "-ar", "16000", str(wav)], check=True)
-    w = wave.open(str(wav)); sr = w.getframerate(); pcm = array.array("h"); pcm.frombytes(w.readframes(w.getnframes()))
+    w = wave.open(str(wav)); sr = w.getframerate(); pcm = array.array("h"); pcm.frombytes(w.readframes(w.getnframes())); w.close()
 dur = len(pcm) / sr
 
 def db(t, n=0.03):   # level of the n seconds starting at t

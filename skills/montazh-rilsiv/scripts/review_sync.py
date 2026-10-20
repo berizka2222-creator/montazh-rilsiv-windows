@@ -61,7 +61,7 @@ def export(reel, proposal, out):
     # Transcript word times run back to back, hiding pauses. Measure real silences in the cleaned voice (threshold just
     # above this clip's noise floor) and pull word edges back to them, so pauses show up as gaps the review can trim.
     import array, math, wave
-    wf = wave.open(str(reel / "voice.wav")); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes()))
+    wf = wave.open(str(reel / "voice.wav")); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()
     hop = int(sr * 0.05)
     lev = sorted(20 * math.log10(max(1.0, math.sqrt(sum(x * x for x in pcm[i:i + hop:4]) / (hop / 4))) / 32768) for i in range(0, len(pcm) - hop, hop))
     thresh = min(lev[len(lev) // 10] + 5, -20)

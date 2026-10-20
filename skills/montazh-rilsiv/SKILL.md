@@ -37,7 +37,7 @@ The person works in the Claude desktop app, Code tab. Never ask them to open Pow
 4. A new install isn't on this shell's PATH yet. Append these lines to `~/.bashrc` (once) and also `export` them in every command until the app restarts:
    `export PATH="$LOCALAPPDATA/Programs/Python/Python312:$LOCALAPPDATA/Programs/Python/Python312/Scripts:/c/Program Files/nodejs:$LOCALAPPDATA/Microsoft/WinGet/Links:$PATH"` and `export PYTHONUTF8=1`. Then re-check `python`, `node`, `ffmpeg`. If one is still missing, find its .exe under `C:\Program Files` or `$LOCALAPPDATA` and add that folder.
    If `winget` itself is missing (old Windows 10), say so plainly and send them to the Microsoft Store page «App Installer» to update it, then continue.
-5. `npx skills add heygen-com/hyperframes -y` if the HyperFrames skills are missing.
+5. `npx skills add heygen-com/hyperframes -g -y` if the HyperFrames skills are missing (`-g`: into the user folder, whatever folder the shell is in).
 6. `bash scripts/setup_engine.sh` (animation library + sound effects).
 7. Speech recognition: connect ElevenLabs Scribe (section «Connecting ElevenLabs Scribe» below). It is required: there is no local recogniser, so nothing large is downloaded. Walk them through creating the key in one short step at a time.
 8. `mkdir -p ~/reels/fonts ~/reels/assets` (the reels workspace).

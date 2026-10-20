@@ -64,6 +64,14 @@ PATCHES = [
     ("scripts/face_box.py", "12 frames across raw.*; macOS Vision finds the face", "12 frames across raw.*; OpenCV (in ~/reels/.venv) finds the face"),
     ("scripts/face_box.py", "Without macOS/swift it falls back", "Without OpenCV it falls back"),
     ("scripts/style_lab.py", "# macOS only; without it graphics aren't moved off the face", "# needs OpenCV in ~/reels/.venv; without it graphics use the default face zone"),
+    # Windows can't delete or replace a file that is still open: close every wav after reading it
+    ("scripts/snap_joins.py", 'pcm.frombytes(w.readframes(w.getnframes()))', 'pcm.frombytes(w.readframes(w.getnframes())); w.close()'),
+    ("scripts/review_sync.py", 'pcm.frombytes(wf.readframes(wf.getnframes()))', 'pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()'),
+    ("scripts/tighten.py", 'pcm.frombytes(wf.readframes(wf.getnframes()))', 'pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()'),
+    # curl.exe gets its arguments in the system code page: a Cyrillic user folder on an English Windows can't be written.
+    # Download into the current folder instead (bash itself handles any path)
+    ("scripts/setup_engine.sh", 'curl -fsSL https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js -o "$E/gsap.min.js.tmp"',
+                                '(cd "$E" && curl -fsSL https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js -o gsap.min.js.tmp)'),
     # ---- docs ----
     ("SKILL.md", "(macOS Vision, ~30 s)", "(OpenCV from ~/reels/.venv, ~30 s)"),
     ("SKILL.md", "`render.sh` only shows a Mac notification", "`render.sh` only shows a Windows notification"),
@@ -90,7 +98,7 @@ The person works in the Claude desktop app, Code tab. Never ask them to open Pow
 4. A new install isn't on this shell's PATH yet. Append these lines to `~/.bashrc` (once) and also `export` them in every command until the app restarts:
    `export PATH="$LOCALAPPDATA/Programs/Python/Python312:$LOCALAPPDATA/Programs/Python/Python312/Scripts:/c/Program Files/nodejs:$LOCALAPPDATA/Microsoft/WinGet/Links:$PATH"` and `export PYTHONUTF8=1`. Then re-check `python`, `node`, `ffmpeg`. If one is still missing, find its .exe under `C:\\Program Files` or `$LOCALAPPDATA` and add that folder.
    If `winget` itself is missing (old Windows 10), say so plainly and send them to the Microsoft Store page «App Installer» to update it, then continue.
-5. `npx skills add heygen-com/hyperframes -y` if the HyperFrames skills are missing.
+5. `npx skills add heygen-com/hyperframes -g -y` if the HyperFrames skills are missing (`-g`: into the user folder, whatever folder the shell is in).
 6. `bash scripts/setup_engine.sh` (animation library + sound effects).
 7. Speech recognition: connect ElevenLabs Scribe (section «Connecting ElevenLabs Scribe» below). It is required: there is no local recogniser, so nothing large is downloaded. Walk them through creating the key in one short step at a time.
 8. `mkdir -p ~/reels/fonts ~/reels/assets` (the reels workspace).

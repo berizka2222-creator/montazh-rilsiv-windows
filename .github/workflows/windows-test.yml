@@ -48,7 +48,7 @@ jobs:
       - name: Install the skill like a student (first-run steps 5-8)
         run: |
           mkdir -p "$HOME/.claude/skills" && cp -R skills/montazh-rilsiv "$HOME/.claude/skills/montazh-rilsiv"
-          npx -y skills add heygen-com/hyperframes -y || echo "skills add failed (doctor.sh will flag it)"
+          npx -y skills add heygen-com/hyperframes -g -y || echo "skills add failed (doctor.sh will flag it)"
           mkdir -p "$HOME/.config/reels" && printf 'ELEVENLABS_API_KEY=sk_test_not_a_real_key\n' > "$HOME/.config/reels/.env"
       - name: Edit a whole reel
         env:
