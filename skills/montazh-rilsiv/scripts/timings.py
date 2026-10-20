@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print how long each stage of a reel took, from <reel>/timings.log ("<unix-seconds> <stage>:start|end" lines).
 Usage: python3 timings.py <reel-folder>"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import sys
 from pathlib import Path
 

@@ -2,8 +2,7 @@
 """Apply the approved rough cut: keep spans from edl.json (in play order), speed up, optional colour grade, scale to the
 brand resolution. Writes master.mp4 in the reel folder.
 Usage: python3 cut.py <reel-folder>      (reads <reel-folder>/edl.json and ~/reels/brand.json)"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
-import shutil
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, subprocess, sys
 from pathlib import Path
 
@@ -19,7 +18,10 @@ from pacing import pacing
 speed = pacing(brand)["speed"]
 w, h = brand.get("resolution", [1080, 1920])
 if os.environ.get("REEL_PREVIEW"): w, h = 1080, 1920          # previews cut at 1080p: a quarter of the work
-grade = brand.get("grade")
+DRAFT = bool(os.environ.get("REEL_DRAFT"))                      # fast review draft: 540x960, colour without the slow clarity/sharpen
+if DRAFT: w, h = 540, 960
+grade = edl.get("grade") or brand.get("grade")   # the page's colour grade (review_sync import writes it into edl.json) wins
+if DRAFT and grade: grade = ",".join(f for f in grade.split(",") if not f.startswith("unsharp"))   # the final adds them back
 FADE = 0.012  # tiny audio fades at every join so cuts never click
 
 vp, ap = [], []
@@ -44,8 +46,8 @@ print(f"{n} spans, {kept:.1f}s kept -> {kept / speed:.1f}s at {speed}x, {w}x{h}"
 if kept / speed > brand.get("max_seconds", 60):
     print(f"warning: longer than {brand.get('max_seconds', 60)}s - suggest more cuts")
 
-subprocess.run([*(["nice", "-n", "15"] if shutil.which("nice") else []), "ffmpeg", "-y", "-v", "error", "-stats", "-i", str(src), "-i", str(audio),
-                "-filter_complex_script", str(script), "-map", "[vout]", "-map", "[aout]",
+subprocess.run(["nice", "-n", "15", "ffmpeg", "-y", "-v", "error", "-stats", "-i", str(src), "-i", str(audio),
+                "-/filter_complex", str(script), "-map", "[vout]", "-map", "[aout]",
                 # A fast, lossy master only when the preview is a throwaway (a 4K brand re-cuts for its final). For a
                 # 1080p brand the preview IS the final, so it always gets the near-transparent encode.
                 *((["-c:v", "h264_videotoolbox", "-b:v", "12M"] if sys.platform == "darwin" else ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"])

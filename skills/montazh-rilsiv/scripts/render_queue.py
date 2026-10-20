@@ -8,10 +8,8 @@ Usage:
   render_queue.py status                                      what is rendering and what waits
 Every finished render appends a line to <queue>/done.log:  <time> DONE|FAIL <reel> <seconds>s
 Watch that file to upload each draft as soon as it is ready. Queue folder: $REELS_HOME/.queue (default ~/reels/.queue)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
-import json, os, shutil, subprocess, sys, time
-try: import fcntl
-except ImportError: fcntl = None; import msvcrt   # Windows
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
+import fcntl, json, os, subprocess, sys, time
 from pathlib import Path
 
 Q = Path(os.environ.get("REELS_HOME", "~/reels")).expanduser() / ".queue"
@@ -27,19 +25,9 @@ def save(js):
     tmp = JOBS.with_suffix(".tmp"); tmp.write_text("".join(json.dumps(j, ensure_ascii=False) + "\n" for j in js)); tmp.replace(JOBS)
 
 
-def lock(f, wait=True):
-    """Exclusive lock on an open file: fcntl on Mac/Linux, msvcrt on Windows. Raises BlockingIOError when busy and wait=False."""
-    if fcntl: fcntl.flock(f, fcntl.LOCK_EX | (0 if wait else fcntl.LOCK_NB)); return
-    while True:
-        try: f.seek(0); msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1); return
-        except OSError:
-            if not wait: raise BlockingIOError
-            time.sleep(0.2)
-
-
 def edit(fn):   # read-modify-write the job list under its own lock, so `add` and `run` never clobber each other
     with open(Q / "jobs.lock", "w") as lk:
-        lock(lk); js = jobs(); out = fn(js); save(js); return out
+        fcntl.flock(lk, fcntl.LOCK_EX); js = jobs(); out = fn(js); save(js); return out
 
 
 def add(reel, flags):
@@ -55,7 +43,7 @@ def add(reel, flags):
 
 def run():
     lk = open(LOCK, "w")
-    try: lock(lk, wait=False)
+    try: fcntl.flock(lk, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError: print("a queue runner is already working; the job will be picked up"); return
     while True:
         job = edit(lambda js: js.pop(0) if js else None)
@@ -63,7 +51,7 @@ def run():
         NOW.write_text(json.dumps(job, ensure_ascii=False))
         env = dict(os.environ, **({"REEL_PREVIEW": "1"} if job["preview"] else {}))
         t0 = time.time(); print(f"rendering {Path(job['reel']).name}", flush=True)
-        rc = subprocess.run([shutil.which("bash") or "bash", str(RENDER), job["reel"], *job["args"]], env=env).returncode
+        rc = subprocess.run(["bash", str(RENDER), job["reel"], *job["args"]], env=env).returncode
         line = f"{time.strftime('%Y-%m-%d %H:%M:%S')} {'DONE' if rc == 0 else 'FAIL'} {job['reel']} {time.time() - t0:.0f}s"
         with open(DONE, "a") as f: f.write(line + "\n")
         print(line, flush=True)

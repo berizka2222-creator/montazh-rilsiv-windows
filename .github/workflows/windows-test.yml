@@ -1,0 +1,68 @@
+# A whole reel edited on a real Windows machine, the way Claude does it for a student:
+# Claude Code on Windows runs every command in Git Bash, so every step here runs in Git Bash too.
+name: Windows test
+on:
+  push:
+    branches: [windows-test]
+  workflow_dispatch:
+
+jobs:
+  reel:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: latin      # C:\Users\runneradmin
+          - profile: cyrillic   # a Ukrainian user name with a space: C:\Users\Інна Березова (home, AppData, Temp all there)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: ffmpeg (the student gets it from winget Gyan.FFmpeg; same build via choco here)
+        shell: pwsh
+        run: choco install ffmpeg -y --no-progress
+      - name: Cyrillic user profile
+        if: matrix.profile == 'cyrillic'
+        shell: pwsh
+        run: |
+          $u = "C:\Users\Інна Березова"
+          New-Item -ItemType Directory -Force -Path "$u\AppData\Roaming","$u\AppData\Local\Temp" | Out-Null
+          "USERPROFILE=$u" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "HOME=$u" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "APPDATA=$u\AppData\Roaming" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "LOCALAPPDATA=$u\AppData\Local" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "TEMP=$u\AppData\Local\Temp" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "TMP=$u\AppData\Local\Temp" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+      - name: Where things are
+        run: |
+          echo "HOME=$HOME"; echo "USERPROFILE=$USERPROFILE"; uname -a
+          for c in python python3 py node npx ffmpeg nice cygpath powershell.exe; do printf '%-14s %s\n' "$c" "$(command -v $c || echo MISSING)"; done
+          python -c "import sys, locale; print(sys.version); print('locale', locale.getpreferredencoding(), 'utf8 mode', sys.flags.utf8_mode)"
+      - name: Install the skill like a student (first-run steps 5-8)
+        run: |
+          mkdir -p "$HOME/.claude/skills" && cp -R skills/montazh-rilsiv "$HOME/.claude/skills/montazh-rilsiv"
+          npx -y skills add heygen-com/hyperframes -y || echo "skills add failed (doctor.sh will flag it)"
+          mkdir -p "$HOME/.config/reels" && printf 'ELEVENLABS_API_KEY=sk_test_not_a_real_key\n' > "$HOME/.config/reels/.env"
+      - name: Edit a whole reel
+        env:
+          REELS_HOME: ${{ matrix.profile == 'cyrillic' && 'C:/Users/Інна Березова/reels' || 'C:/Users/runneradmin/reels' }}
+          FIX: tools/ci/fixture
+          OUTD: test-out
+        run: bash tools/ci/test_pipeline.sh
+      - name: Report
+        if: always()
+        run: |
+          { echo "## Windows · ${{ matrix.profile }} profile"; cat test-out/report.md 2>/dev/null; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-${{ matrix.profile }}
+          path: test-out/
+          retention-days: 14

@@ -30,7 +30,7 @@ Runs once, before the first edit. Output: `~/reels/brand.md` (for people and for
 10. **Your usual call to action.** e.g. "comment GUIDE and I'll send it", "follow for part 2". Always at the end?
 11. **Where do you post?** Instagram / TikTok / YouTube Shorts / all.
 12. **CapCut.** "Do you want an editable CapCut version too, so you can tweak captions and sounds yourself?" If yes, explain plainly: it needs a free CapCut account, and the connector currently doesn't work from the United States, and the CapCut app is not available in India. If they're in either place, set `"capcut": false` and reassure them the MP4 route gives the same finished reel.
-13. **Video quality.** 1080p (default, works on any computer) or 4K (sharper, needs ~35 GB free disk and a powerful computer).
+13. **Video quality.** 1080p (default, works on any computer) or 4K (sharper, needs ~35 GB free disk and a recent computer).
 
 ## brand.md - write it in this shape
 
@@ -106,3 +106,17 @@ Runs once, before the first edit. Output: `~/reels/brand.md` (for people and for
 - `deliver_dir`: on Windows/Linux use `~/Videos/Reels`. Never a cloud-synced folder (Desktop on iCloud, OneDrive) - big video files make it struggle.
 
 See `examples/` in the repo for a complete filled-in pair.
+
+## After the brand files: their style («Стиль»)
+
+The brand files say what their colours and fonts are; the style says how their reels move and sound. Build it before the first edit, from their own video, never from someone else's style (a mentor's style is not a student's default).
+1. **Base.** They have a design system (brand book, site, Figma, a file): take it from there and only confirm. They don't: ask for 3-5 references (reels, screenshots, posts) and these 4 mood questions, one at a time:
+   - calm or energetic?
+   - clean and neat or playful and handmade?
+   - big bold words on screen, or small and quiet?
+   - sounds: none, soft, or punchy?
+2. **A 5-second piece of their video** where they make a point: `python3 scripts/style_lab.py fragment <clip> <start> <end> --hook "…"` with their own hook text.
+3. **Round 1:** 9 directions in their colours and fonts on that piece (`style_lab.py directions`), on the review page's «Стиль» tab. They rate each: Залишити / Можливо / Прибрати + a note, can attach a reel link or files they like, then «Готово → Claude». They are never limited to what they saw: notes and references shape the next round.
+4. **Rounds 2+** go element by element (captions, hook, lists, numbers, screen splits, transitions, CTA, sounds), one change per variant, same words. Two or three rounds are enough to start editing; the rest can come later.
+5. Each direction they keep is its own style. Before every edit you ask which one.
+Full workflow: `references/style-lab.md`.

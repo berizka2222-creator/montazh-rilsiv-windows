@@ -3,7 +3,7 @@
 in the brand's head font and colours. Text sits inside the centre 4:5 area, the part Instagram shows in the profile grid.
 Usage: python3 cover.py <reel-folder> ["hook / text"]   -> <reel>/cover_1.jpg .. cover_3.jpg + covers.jpg (side by side)
 The hook comes from the argument, else the title card in edit.json. Frames come from master.mp4 (camera only, no cards)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, subprocess, sys, tempfile
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageStat

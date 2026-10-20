@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """QA gate for a finished reel. Checks size, length, loudness, and (if expected.txt exists) that no words were lost.
 Usage: python3 qa.py <reel-folder> [video]     default video: final.mp4. Exit code 1 if anything fails."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import difflib, json, os, re, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -46,5 +46,10 @@ if exp.exists():
 else:
     print("words     skipped (write the approved script to expected.txt to check for clipped words)")
 
+sz = reel / "safezones.json"   # written by build_reel.py: graphics or captions under the Instagram UI (warning, not a fail)
+if sz.exists():
+    ws = json.load(open(sz))["warnings"]
+    print(f"safe zones {'ok' if not ws else str(len(ws)) + ' warning(s)'}")
+    for w in ws: print("   ", w["msg"])
 print("PASS" if not fails else f"FAIL: {', '.join(fails)}")
 sys.exit(1 if fails else 0)

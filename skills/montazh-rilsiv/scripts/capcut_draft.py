@@ -3,7 +3,7 @@
 sound effects. Reads upload.json, captions.json, sfx.json from the reel folder and brand.json; writes draft.json.
 Push it with the CapCut tools (start_stdraft_session -> push_stdraft_snapshot). See references/capcut.md.
 Usage: CAPCUT_SKILLS_DIR=/path/to/capcut/skills python3 capcut_draft.py <reel-folder>"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, sys
 from collections import Counter
 from pathlib import Path

@@ -22,7 +22,6 @@
 ## Значення за замовчуванням для brand.json
 Пиши їх, якщо людина не сказала інакше:
 - `"language": "uk"`
-- `"deliver_dir": "~/Videos/Reels"` (Windows: папка «Відео»)
 - `"glass": true` (скляні картки, бейджі, CTA), `"title_glass": false`
 - `"title_color"`: світлий колір бренду, `"title_outline": null`, `"title_max_px": 130`, `"title_y": 1120`
 - `"cta_px": 62`

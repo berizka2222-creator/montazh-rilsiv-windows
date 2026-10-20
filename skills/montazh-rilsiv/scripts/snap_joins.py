@@ -3,7 +3,7 @@
 Transcript word times are never exact; the gap between two words is where the voice actually drops.
 Usage: python3 snap_joins.py <reel-folder> [--window 0.3]
 Run after edl.json exists (review_sync import or a hand-written edl) and before cut.py."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import array, json, math, subprocess, sys, tempfile, wave
 from pathlib import Path
 

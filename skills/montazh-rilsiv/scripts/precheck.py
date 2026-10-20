@@ -6,7 +6,7 @@
   - CHECK: caption words that don't match what was heard (misheard words like "донути" for "донести")
 Usage: python3 precheck.py <reel-folder>     (after cut.py and once edit.json exists; writes master_transcript.json)
 Fix what it lists in edit.json (or the edl + cut.py for a bad join), then render."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import bisect, difflib, json, os, re, subprocess, sys
 from pathlib import Path
 

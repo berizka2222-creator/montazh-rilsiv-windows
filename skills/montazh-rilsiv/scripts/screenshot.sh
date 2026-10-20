@@ -6,7 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 URL="$1"; OUT="$2"
 for c in "/c/Program Files/Google/Chrome/Application/chrome.exe" \
          "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" \
-         "$LOCALAPPDATA/Google/Chrome/Application/chrome.exe" \
+         "${LOCALAPPDATA:-}/Google/Chrome/Application/chrome.exe" \
          "/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" \
          "/c/Program Files/Microsoft/Edge/Application/msedge.exe" \
          "$(command -v google-chrome || true)" "$(command -v chromium || true)"; do

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 # Check everything the reel editor needs and say plainly whether you can edit.
 # Ends with one of: READY · READY WITH LIMITS (works, something optional is missing) · MISSING (fix before editing).
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 ok()   { printf '  ✅ %s\n' "$1"; }
 warn() { printf '  ⚠️  %s\n     %s\n' "$1" "$2"; LIMITS=1; }
 no()   { printf '  ❌ %s\n     fix: %s\n' "$1" "$2"; MISSING=1; }
@@ -51,6 +51,12 @@ else
   echo "  ➖ no brand file yet - the setup interview will make one"
 fi
 echo "  ℹ️  the review page needs Claude Code's Artifact tools; Claude checks this when you start an edit (chat review otherwise)"
+
+# text widths are measured in the real fonts (fontTools in ~/reels/.venv), so wide display fonts never spill out of the frame
+VENV="${REELS_HOME:-$HOME/reels}/.venv"; VPY="$VENV/Scripts/python.exe"
+if [ -x "$VPY" ] && "$VPY" -c "import fontTools, brotli, cv2" 2>/dev/null; then ok "font measuring + face finding (fontTools, OpenCV)"
+elif { [ -x "$VPY" ] || python3 -m venv "$(wp "$VENV")" >/dev/null 2>&1; } && "$VPY" -m pip install -q fonttools brotli Pillow opencv-python-headless >/dev/null 2>&1; then ok "font measuring + face finding installed in $VENV"
+else warn "fontTools/OpenCV not installed" "text sizes fall back to an estimate and graphics use the default face zone; run: python -m venv ~/reels/.venv && ~/reels/.venv/Scripts/python.exe -m pip install fonttools brotli Pillow opencv-python-headless"; fi
 
 FREE_GB=$(df -Pk "$HOME" | awk 'NR==2{print int($4/1048576)}')
 [ "$FREE_GB" -ge 10 ] && ok "${FREE_GB} GB free disk" || no "only ${FREE_GB} GB free disk" "free up 10+ GB (35+ GB for 4K exports)"

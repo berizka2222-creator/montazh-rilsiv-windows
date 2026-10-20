@@ -88,7 +88,8 @@
       let endSrc;
       if (g.w1 != null && !P.removed(g.w1)) endSrc = W[g.w1].e;
       else { let k = a; while (k < W.length - 1 && !/[.,!?;:]$/.test(W[k].text) && W[k + 1].s - W[k].e < 0.35 && P.toCut(W[k].e) - P.toCut(W[a].s) < 4) k++; endSrc = W[k].e; }
-      const start = P.toCut(W[a].s), end = Math.max(start + 1, P.toCut(endSrc) + 0.15);
+      const minDur = g.type === "block" ? 2.2 : ["card", "list", "split", "steps"].includes(g.type) ? 2.5 : g.type === "push" ? 2 : g.type === "follow" ? 2.5 : 1;   // long enough to read past the entrance animation
+      const start = P.toCut(W[a].s), end = Math.max(start + minDur, P.toCut(endSrc) + 0.15);
       return { ...g, state, start, end: Math.min(end, P.cutDur), moved: a !== g.w0 };
     }).concat((d.overlays || []).map(o => {   // overlays they added on the page: an uploaded image/video (or big text) from a word, for o.dur seconds
       const state = ((d.board || {})[o.id] || {}).state || "k", a = firstKeptFrom(o.w0);
@@ -105,6 +106,8 @@
     // the hook text and the CTA they typed on the page (their words, so they count as theirs)
     if ((d.hook || "").trim()) for (const g of out) if (g.type === "title") Object.assign(g, { text: d.hook.trim(), what: d.hook.replace(/\s*\/\s*/g, " ").trim(), own: true });
     for (const g of out) if (g.type === "title" && !g.gone) g.end = Math.min(Math.max(g.end, g.start + 3.5), P.cutDur);   // a hook needs ~3.5 s to be read
+    for (const g of out) { const b = (d.board || {})[g.id]; if (b && typeof b.behind === "boolean") g.behind = b.behind; }   // «За мною» toggled on the page
+    layout(reel, d, out);
     if (((d.cta || {}).text || "").trim()) {
       const dur = Math.min(d.cta.dur || 4, P.cutDur);
       out.push({ id: "cta", type: "cta", kind: "Заклик (CTA)", what: d.cta.text.trim(), text: d.cta.text.trim(), own: true,
@@ -113,16 +116,126 @@
     return out;
   }
 
+  // keep graphics off the face and off the captions: reel.face = [x,y,w,h] (scripts/face_box.py), captions at capY.
+  // A box that hits either moves below the face, or above it, inside the frame Instagram leaves clear (top 200, bottom ~280).
+  // Full-screen cards, graphics behind the person and their own dragged overlays stay where they are.
+  const TOP_SAFE = 200, BOTTOM_SAFE = 1640, CAP_H = 170, GAP = 30;
+  function capY(reel, d) { return d.capY != null ? d.capY : ((reel.style || {}).capY ?? 1250); }
+  function layout(reel, d, out) {
+    const F = reel.face; if (!F) return;
+    const cy = capY(reel, d), zones = [[F[1] - 20, F[1] + F[3] + 20], [cy - 10, cy + CAP_H]];
+    const hits = (y, h) => zones.some(([a, b]) => y < b && a < y + h);
+    for (const g of out) {
+      const p = g.place; if (!p || g.gone || (g.user && g.box) || (p[2] >= 1000 && p[3] >= 1800)) continue;
+      if (g.behind) {   // behind the person only shows where the background is: above the head, tucked a little behind the hair
+        const tuck = g.type === "bigtext" || g.type === "title" ? 0.35 : 0.08;   // big words may hide behind the hair; lists and cards stay readable
+        let h = p[3], w = p[2], x = p[0], y = Math.round(F[1] - h * (1 - tuck));
+        if (y < TOP_SAFE) {   // too tall for the space above the head: shrink it to fit, centred where it was
+          const z = Math.max(0.55, (F[1] - TOP_SAFE) / (h * (1 - tuck)));
+          const w2 = Math.round(w * z), h2 = Math.round(h * z); x = Math.round(x + (w - w2) / 2); w = w2; h = h2; y = TOP_SAFE; g.zoom = +z.toFixed(3);
+        }
+        if (y !== p[1] || g.zoom) { g.place = [x, y, w, h]; g.shifted = true; }
+        continue;
+      }
+      if (!hits(p[1], p[3])) continue;
+      const h = p[3], tries = [F[1] + F[3] + GAP, cy + CAP_H + GAP, F[1] - h - GAP, cy - h - GAP];
+      let y = tries.find(t => t >= TOP_SAFE && t + h <= BOTTOM_SAFE && !hits(t, h));
+      let aside = false;
+      if (y == null) { y = Math.min(Math.max(F[1] + F[3] + GAP, TOP_SAFE), BOTTOM_SAFE - h); aside = true; }   // no clean spot: under the chin, and the captions step aside while it shows
+      g.place = [p[0], Math.round(y), p[2], h]; g.shifted = true; if (aside) g.capsAside = true;
+    }
+  }
+
+  // captions make room for a graphic behind the person: while one shows above the head, captions there drop under the chin
+  function capsAround(reel, d, caps, gfx) {
+    const F = reel.face; if (!F) return caps;
+    const cy = capY(reel, d), alt = F[1] + F[3] + 20;
+    for (const c of caps) {
+      if (c.gone) continue;
+      const hit = gfx.some(g => g.behind && !g.gone && g.state !== "d" && g.place && c.start < g.end && g.start < c.end &&
+        cy < g.place[1] + g.place[3] && g.place[1] < cy + CAP_H);
+      if (hit) c.y = alt; else delete c.y;
+    }
+    return caps;
+  }
+
   // a fingerprint of everything that changes the render, to tell whether a built preview is outdated
   function hash(d) {
     const s = JSON.stringify([d.cut, d.restoredFillers, d.restoredPauses, d.trimmedPauses, d.captions, d.board, d.sfxOff, d.voiceClean === false]
       .concat((d.overlays || []).length ? [d.overlays] : [])   // later fields only when set, so older builds keep their hash
       .concat((d.hook || "").trim() ? [d.hook.trim()] : []).concat(((d.cta || {}).text || "").trim() ? [d.cta] : [])
-      .concat((d.effects || []).length ? [d.effects] : []));
+      .concat((d.effects || []).length ? [d.effects] : [])
+      .concat(d.grade && !isNeutral(d.grade) ? [d.grade] : [])
+      .concat(Object.keys(d.sfxSwap || {}).length ? [d.sfxSwap] : [])
+      .concat(d.capY != null ? [d.capY] : [])
+      .concat(d.capSize != null ? ["sz" + d.capSize] : [])
+      .concat(d.capFont ? [d.capFont] : [])
+      .concat(d.style ? ["st:" + d.style] : [])
+      .concat(d.speedMul ? ["sp" + d.speedMul] : [])
+      .concat(d.look && (d.look.cap || d.look.hook) ? [{ cap: d.look.cap, hook: d.look.hook }] : []));
     let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36);
   }
 
-  const api = { plan, captions, graphics, hash };
+  // colour grade set on the page, iPhone-style sliders, each -100..100 (clarity and sharpness 0..100), 0 = untouched:
+  // ex exposure, hi highlights, sh shadows, co contrast, br brightness, sa saturation, vi vibrance («кольоровість»), wa warmth,
+  // cl clarity, sp sharpness. One model for the page (WebGL) and the render (ffmpeg lut1d + colorchannelmixer + vibrance + unsharp).
+  const GKEYS = ["ex", "hi", "sh", "co", "br", "sa", "vi", "wa", "cl", "sp"];
+  function gradeNorm(g) { const o = {}; for (const k of GKEYS) o[k] = Math.max(-100, Math.min(100, +((g || {})[k]) || 0)); o.cl = Math.max(0, o.cl); o.sp = Math.max(0, o.sp); return o; }
+  function isNeutral(g) { const n = gradeNorm(g); return GKEYS.every(k => Math.abs(n[k]) < 0.5); }
+  const s2l = x => x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4), l2s = x => x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+  const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function mono(x, S, H) {   // a smooth monotone curve through points pulled by shadows (S) and highlights (H), -1..1
+    const X = [0, 0.15, 0.3, 0.5, 0.7, 0.85, 1], Y = [0, 0.15 + 0.12 * S, 0.3 + 0.06 * S, 0.5, 0.7 + 0.06 * H, 0.85 + 0.12 * H, 1];
+    const n = X.length, d = [], m = [];
+    for (let i = 0; i < n - 1; i++) d.push((Y[i + 1] - Y[i]) / (X[i + 1] - X[i]));
+    m.push(d[0]); for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2); m.push(d[n - 2]);
+    for (let i = 0; i < n - 1; i++) { if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; }   // Fritsch-Carlson: no overshoot
+      const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b; if (h > 9) { const t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; } }
+    let k = 0; while (k < n - 2 && x > X[k + 1]) k++;
+    const h = X[k + 1] - X[k], t = (x - X[k]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * Y[k] + (t3 - 2 * t2 + t) * h * m[k] + (-2 * t3 + 3 * t2) * Y[k + 1] + (t3 - t2) * h * m[k + 1];
+  }
+  function tone(x, n) {   // one channel 0..1 through exposure, highlights, shadows, brightness, contrast
+    x = l2s(Math.min(1, s2l(x) * Math.pow(2, n.ex / 100)));                       // exposure: up to ±1 stop, in linear light
+    x = mono(x, n.sh / 100, n.hi / 100);                                             // shadows / highlights: black and white stay put
+    x = Math.pow(Math.max(0, x), Math.pow(2, -n.br / 100 * 0.45));                  // brightness: mid-tones, ends stay put
+    const k = Math.pow(2, n.co / 100 * 0.9);                                         // contrast: S-curve around the middle
+    x = x < 0.5 ? 0.5 * Math.pow(2 * x, k) : 1 - 0.5 * Math.pow(2 - 2 * x, k);
+    return Math.max(0, Math.min(1, x));
+  }
+  function gradeLut(g, N = 256) {   // per-channel tone curve incl. warmth: [[r,g,b] x N] for inputs i/(N-1)
+    const n = gradeNorm(g), W = n.wa / 100, gain = [1 + 0.07 * W, 1, 1 - 0.07 * W], out = [];
+    for (let i = 0; i < N; i++) { const t = tone(i / (N - 1), n); out.push(gain.map(k => Math.max(0, Math.min(1, t * k)))); }
+    return out;
+  }
+  function gradeParams(g) {
+    const n = gradeNorm(g), s = Math.max(0, 1 + n.sa / 100 * 0.6);
+    return { n, lut: gradeLut(n), vib: n.vi / 100 * 0.6, clar: n.cl / 100 * 0.8, sharp: n.sp / 100 * 1.2,
+             sat: [0.2126 + 0.7874 * s, 0.7152 - 0.7152 * s, 0.0722 - 0.0722 * s, 0.2126 - 0.2126 * s, 0.7152 + 0.2848 * s, 0.0722 - 0.0722 * s,
+                   0.2126 - 0.2126 * s, 0.7152 - 0.7152 * s, 0.0722 + 0.9278 * s] };
+  }
+  function gradeCube(g) { return "LUT_1D_SIZE 256\n" + gradeLut(g).map(v => v.map(x => x.toFixed(6)).join(" ")).join("\n") + "\n"; }
+  function gradeFilter(g, cubePath) {   // ffmpeg chain ("" when untouched); cubePath = where gradeCube(g) was written
+    if (isNeutral(g)) return "";
+    const P = gradeParams(g), f = x => (+x.toFixed(4)).toString(), out = [`lut1d=file=${cubePath}:interp=linear`];
+    if (Math.abs(P.n.sa) >= 0.5) out.push("colorchannelmixer=" + ["rr", "rg", "rb", "gr", "gg", "gb", "br", "bg", "bb"].map((k, i) => `${k}=${f(P.sat[i])}`).join(":"));
+    if (Math.abs(P.vib) > 1e-3) out.push(`vibrance=intensity=${f(P.vib)}:alternate=1:rlum=0.2126:glum=0.7152:blum=0.0722`);
+    if (P.clar > 1e-3) out.push(`unsharp=13:13:${f(P.clar)}:3:3:0`);
+    if (P.sharp > 1e-3) out.push(`unsharp=5:5:${f(P.sharp)}:3:3:0`);
+    return out.join(",");
+  }
+
+  // Instagram Reels screen over a 1080x1920 frame (measured off an iPhone; keep in sync with scripts/safezones.py).
+  // covered = the app draws over it; crop = cut off at the sides on taller phones; safe = where text and graphics belong.
+  const SAFE = {
+    covered: [{ id: "top", box: [0, 0, 1080, 220], label: "Верхня панель" },
+              { id: "bottom", box: [0, 1500, 1080, 420], label: "Нік, підпис, музика" },
+              { id: "buttons", box: [950, 1000, 130, 500], label: "Кнопки" }],
+    crop: [[0, 0, 60, 1920], [1020, 0, 60, 1920]],
+    safe: [60, 220, 960, 1280],
+  };
+
+  const api = { SAFE, plan, captions, graphics, hash, capY, capsAround, gradeNorm, gradeParams, gradeLut, gradeCube, gradeFilter, isNeutral, GKEYS };
   if (typeof module !== "undefined") module.exports = api; else root.ReelCore = api;
 })(this);

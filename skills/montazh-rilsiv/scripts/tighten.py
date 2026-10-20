@@ -6,7 +6,7 @@ Usage: python3 tighten.py <reel-folder>
 
 How: fillers are the hesitation words in the Scribe transcript (transcript.json). Pauses come from silencedetect on the cleaned voice. Every cut edge keeps the preset's
 air (50-150 ms) so words never clip."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 

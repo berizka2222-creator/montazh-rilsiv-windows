@@ -3,7 +3,7 @@
 Writes a flat word list: [{"text","start","end"}, ...]. There is no local fallback: no key or no network stops here.
 Usage: python3 transcribe.py <video-or-audio> <out.json>
 Key: ELEVENLABS_API_KEY in the environment or in ~/.config/reels/.env (never pasted into chat)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _utf8  # Windows: UTF-8 mode
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, subprocess, sys, tempfile, urllib.error, urllib.request, uuid
 from pathlib import Path
 
