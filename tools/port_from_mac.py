@@ -17,6 +17,8 @@ MAC_ONLY = {"scripts/face_box.swift"}
 
 # (file, old, new): exact text swaps
 PATCHES = [
+    ("SKILL.md", "Then run `bash scripts/set_key.sh PIXABAY_API_KEY`: a Mac window with a hidden field opens, they paste the key there.",
+                 "Then run `bash scripts/set_key.sh PIXABAY_API_KEY`: a Windows sign-in style window opens, they paste the key into the password field and press OK."),
     # ---- shell scripts ----
     ("scripts/render.sh", 'MEM_GB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 17179869184) / 1073741824 ))', 'MEM_GB="$(mem_gb)"; MEM_GB="${MEM_GB:-16}"'),
     ("scripts/render.sh", 'BRAND="${REELS_HOME:-$HOME/reels}/brand.json"', 'BRAND="$(wp "${REELS_HOME:-$HOME/reels}/brand.json")"'),
