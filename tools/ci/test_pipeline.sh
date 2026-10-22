@@ -145,9 +145,10 @@ step "motions.py ideas"              py "$S/motions.py" ideas "$(wp "$REEL")"
 step "precheck.py"                   py "$S/precheck.py" "$(wp "$REEL")"
 step "test_motions.py (2 motions)"   py "$S/test_motions.py" "$(wp "$REEL")" "$(wp "$OUTD/motions")" --names count-up,per-word-rise --workers 1
 step "render draft (incl. cut-out behind)" env REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$REEL"
-qa_draft() {   # the draft is 540x960 on purpose, so the size check is the one FAIL allowed here
+qa_draft() {   # the draft is 540x960 on purpose and only the final gets the -14 LUFS pass, so size and loudness may FAIL here
   local o; o="$(REEL_PREVIEW=1 python3 "$S/qa.py" "$(wp "$REEL")" draft.mp4 2>&1)"; echo "$o"
-  [ "$(printf '%s\n' "$o" | grep '^FAIL')" = "FAIL: size" ] || printf '%s\n' "$o" | grep -q '^PASS'
+  local bad; bad="$(printf '%s\n' "$o" | grep '^FAIL' | grep -vE '^FAIL: (size|loudness|size, loudness)$')"; [ -z "$bad" ] || return 1
+  printf '%s\n' "$o" | grep -qE '^(PASS|FAIL)'
 }
 step "qa.py on draft"                qa_draft
 step "frames from draft"             frames
