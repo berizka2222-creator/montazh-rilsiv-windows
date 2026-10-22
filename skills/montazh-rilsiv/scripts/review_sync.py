@@ -7,6 +7,7 @@ The cut timeline is computed by review/core.js (run with node), the same file th
 
 proposal.json (Claude writes this per reel):
   {"title", "proposedCut": [[srcStart, srcEnd], ...] (kept lines), "accentWords": ["claude", ...],
+   "hookOptions": ["3 hooks in their words, / = new line"] (optional, scripts/storyboard.py draws them),
    "cards": [{"id","type","kind","what","anchor":"word","after":srcSec,"end_anchor"?,"place":[x,y,w,h], "sfx":{"name","db"}, ...build_reel fields}]}"""
 import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
@@ -52,6 +53,49 @@ const P=C.plan(R,D);process.stdout.write(JSON.stringify({{spans:P.spans,cutDur:P
 captions:C.capsAround(R,D,C.captions(R,D,P),C.graphics(R,D,P)),graphics:C.graphics(R,D,P),hash:C.hash(D),grade:C.gradeFilter(D.grade,"__CUBE__"),cube:C.isNeutral(D.grade)?"":C.gradeCube(D.grade)}}));"""
     return json.loads(subprocess.run(["node", "-e", js], input=json.dumps({"r": reel_json, "d": decisions}),
                                      capture_output=True, text=True, check=True).stdout)
+
+def lib_count():
+    """How many effects Claude picks from on its own: checked catalog motions plus the Remotion brand elements."""
+    cat = json.load(open(Path(__file__).resolve().parent.parent / "references" / "motion_catalog.json"))["motions"]
+    lib = Path(os.environ.get("MOTION_HOME", "~/motion")).expanduser() / "library.json"
+    return sum(1 for m in cat if m.get("status") in ("ready", "replace", "full_only")) + (len(json.load(open(lib))["elements"]) if lib.exists() else 0)
+
+def my_stamps():
+    """«Мої марки»: graphics from their finished reels (scripts/motions.py stamp), with their uploaded stills."""
+    st = HOME / "stamps.json"
+    if not st.exists(): return []
+    pv = HOME / ".motion_previews.json"; pv = json.load(open(pv)) if pv.exists() else {}
+    return [{"key": x["key"], "ua": x["ua"], "uses": x.get("uses", 1), **({"img": pv["stamp:" + x["id"]]} if "stamp:" + x["id"] in pv else {})}
+            for x in sorted(json.load(open(st)), key=lambda x: -x.get("uses", 1))]
+
+def style_previews():
+    """Looping examples for «Тільки бренд» and «Мікс ефектів» on «Стиль монтажу» (<REELS_HOME>/.motion_previews.json "style:brand" / "style:mix")."""
+    pv = HOME / ".motion_previews.json"
+    pv = json.load(open(pv)) if pv.exists() else {}
+    return {k: pv[f"style:{k}"] for k in ("brand", "mix") if f"style:{k}" in pv}
+
+def caption_styles():
+    """Caption styles from the catalog (status "caption") for «Анімація субтитрів» on the «Субтитри» tab."""
+    cat = json.load(open(Path(__file__).resolve().parent.parent / "references" / "motion_catalog.json"))["motions"]
+    pv = HOME / ".motion_previews.json"
+    pv = json.load(open(pv)) if pv.exists() else {}
+    return [{"n": m["name"], "ua": m.get("ua") or m["name"], **({"p": pv[m["name"]]} if m["name"] in pv else {})}
+            for m in cat if m.get("status") == "caption"]
+
+def manual_effects():
+    """«Меню ефектів» on the page's «Ефекти» tab: every usable catalog effect, k "a" = Claude suggests it, "m" = only when asked."""
+    cat = json.load(open(Path(__file__).resolve().parent.parent / "references" / "motion_catalog.json"))["motions"]
+    def group(m):
+        n, note = m["name"], m.get("note") or ""
+        return ("Мапи" if "мапа" in note else "Переходи між склейками" if "перехід" in note or m.get("card", {}).get("layout") == "transition"
+                else "Стилі субтитрів" if n.startswith("caption-") else "Потрібен свій логотип" if "лого" in note or "бренд" in note
+                else "Переходи між склейками" if "перехід" in (m.get("moments") or [""])[0] else (lambda x: x[:1].upper() + x[1:])((m.get("moments") or ["інше"])[0]))
+    pv = HOME / ".motion_previews.json"            # {name: url}: 3 s looping previews uploaded to the page's assets
+    pv = json.load(open(pv)) if pv.exists() else {}
+    out = [{"n": m["name"], "ua": m.get("ua") or m["name"], "g": group(m), "k": "m" if m.get("status") == "manual" else "a",
+            **({"p": pv[m["name"]]} if m["name"] in pv else {})}
+           for m in cat if m.get("status") in ("manual", "ready", "replace", "full_only")]
+    return sorted(out, key=lambda x: (x["g"], x["ua"]))
 
 def export(reel, proposal, out):
     out.mkdir(parents=True, exist_ok=True)
@@ -123,7 +167,7 @@ def export(reel, proposal, out):
     reel_json = {"title": proposal["title"], "srcDur": float(subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                  "format=duration", "-of", "csv=p=0", str(raw_clip(reel))], capture_output=True, text=True).stdout),
                  "theme": _theme(brand), "handle": brand.get("handle", ""), "speed": pacing(brand)["speed"], "pacing": pacing(brand), "words": words, "proposedCut": proposed_cut, "keepPauses": keep_pauses,
-                 "captions": caps, "board": board,
+                 "captions": caps, "board": board, "stylePreviews": style_previews(), "stamps": my_stamps(), "manual": manual_effects(), "capStyles": caption_styles(), "hookOptions": [{"text": t} for t in proposal.get("hookOptions") or []], "libCount": lib_count(),
                  "style": {"capSize": brand["captions"].get("size", 104), "capY": brand["captions"].get("y", 1250),
                            "mode": mode, "editorial": brand["captions"].get("style") == "editorial",
                            "cap": brand["colors"].get("caption", "#FFFFFF"), "acc": brand["colors"].get("caption_accent", "#FF7DB8"), "acc2": brand["colors"].get("caption_accent_2"),
@@ -187,10 +231,12 @@ def do_import(reel, review):
         if g.get("gone") or g["state"] == "d": continue
         note = ((d.get("board") or {}).get(g["id"]) or {}).get("note")
         if g["state"] == "c": changes.append(f"{g['id']} @ cut {g['start']:.1f}s: {note or '(no note)'}")
-        spec = {k: v for k, v in g.items() if k not in ("id", "kind", "what", "w0", "w1", "state", "place", "moved", "gone", "own", "shifted", "capsAside")}
+        spec = {k: v for k, v in g.items() if k not in ("id", "kind", "what", "w0", "w1", "state", "place", "moved", "gone", "own", "shifted", "capsAside", "placed", "storyUrl")}
         if g.get("capsAside"): spec["quiet"] = True   # captions step aside while this card shows (no room for both)
         if g.get("shifted") and g.get("type") in ("motion", "custom") and not g.get("user"):
             pass   # catalog motions keep their tested placement (band / split / full, see build_reel); the page only shifts their preview box
+        elif g.get("placed") and g.get("type") in ("card", "tag", "title", "bigtext", "cta"):   # dragged on the page: exactly there
+            spec["y"], spec["x"] = g["place"][1], g["place"][0]
         elif g.get("shifted"):   # core.js moved it off the face / captions: the render uses the new spot
             if g.get("type") in ("card", "tag", "title", "bigtext", "cta"):
                 spec["y"] = g["place"][1]
@@ -222,6 +268,9 @@ def do_import(reel, review):
         if page_look and (d.get("look") or {}).get("keep"):   # becomes the brand default (reel.json "look" on the next reels)
             bp = HOME / "brand.json"; bj = json.load(open(bp)); bj["text_look"] = look
             json.dump(bj, open(bp, "w"), ensure_ascii=False, indent=2); print("TEXT LOOK saved to brand.json for the next reels")
+    for u in d.get("refs") or []: print("REFERENCE:", u, "→ references/reference.md")   # «зроби як тут» links from «Ефекти»
+    if d.get("picks"): extra["menu_picks"] = d["picks"]; print("MENU PICKS (their basket, use every one where a line fits):", ", ".join(d["picks"]))
+    if d.get("capStyle"): extra["caption_style"] = d["capStyle"]; print("CAPTION STYLE:", d["capStyle"])   # «Анімація субтитрів» on «Субтитри»
     if d.get("speedMul"): extra["motion_mul"] = d["speedMul"]; print("MOTION SPEED for this reel: x" + str(d["speedMul"]))   # «Повільніше / Швидше» on «Графіка»
     st = d.get("style")   # the editing style she picked on «Графіка» (~/reels/styles/<name>.json); "brand" = brand.json only
     if st:

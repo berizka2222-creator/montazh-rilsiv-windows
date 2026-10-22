@@ -9,6 +9,7 @@ A private page on the person's claude.ai account where they approve the edit bef
 3. Make the assets (keep them light, `nice -n 15`):
    - a 540x960 source proxy of `raw.mov` with the **cleaned** `voice.wav` as its audio (h264, ~900 kbps). The raw phone audio is ~20 dB quieter, so a proxy with it makes the voice sound broken
    - per graphic: `thumb_<id>.jpg` (180x320 frame at its anchor word) and `img_<id>.jpg` (its screenshot/image, 480 wide)
+   - **storyboard** (every time graphics are proposed): `python3 scripts/storyboard.py <reel>` → `<reel>/storyboard/story_<id>.jpg`, one 540x960 still per graphic: their own frame at that moment with that very card on it (brand, tested placement), ~10 s a card, no render. Plus `hook_<n>.jpg` for each `"hookOptions"` text in proposal.json. Upload them and set each board item's `storyUrl` and `hookOptions: [{text, img}]` in `reel/current`: «Графіка» then shows the real look (tap = big) instead of a frame with a text box, and the hook as pictures A/B/C next to the field for their own. Look at every still before sending the link; a still that shows something wrong is fixed in proposal.json first.
    - `audio_original.mp4` / `audio_cleaned.mp4` (same 10 s), `colour_before.jpg` / `colour_after.jpg` (same frame, grade applied), `sfx_<name>.mp4` for each sound
    - the brand's caption fonts (.otf/.ttf/.woff2) **only if the person owns them and the page stays private**
    Asset uploads accept mp4 (audio too), jpg/png, fonts; not m4a or wav.
@@ -26,6 +27,25 @@ The page shows steps (1 her edit → 2 Claude's proposals → 3 draft → 4 fina
 - `fixRequest` (revisions marked `sent`) / «виправ нотатки» → act on those revisions, re-render, new `builds/latest` with `fixedFor` = `fixRequest.at` (the decisions hash may not change, so this is how the page knows the notes were answered).
 - `finalRequest` / «фінал» → QA, deliver, covers only if brand.json `covers` isn't false; then `builds/latest` gets `final: true` (step 4).
 Reply in the comment thread in one line («Взяв, роблю пропозиції, ~10 хв») and resolve it when done. If no session is listening the page tells her to type the word in chat instead.
+
+## «Меню ефектів» on their face («Ефекти» tab)
+
+Every usable effect (Claude's suggestions and «Тільки вручну») as a 3 s clip on THEIR video in their brand, with a filter,
+search and a basket «Мій вибір». On their first reel start `python3 scripts/menu_previews.py <reel>` in the background
+right after the cut (~40-60 min, resumes; order: manual, caption styles, suggested). Upload `<REELS_HOME>/menu/*.mp4`
+(25 per call) and map name → url in `<REELS_HOME>/.motion_previews.json`; re-export so `reel.json` "manual" carries them
+(items with no clip yet say «прев'ю ще готується»). Their basket comes back on import as `MENU PICKS:` (edit.json
+`menu_picks`): put every picked effect in the plan on a line it fits, and say which one had no line.
+
+## «Стиль монтажу» examples (step 1)
+
+The tab shows every saved style as a looping example (style/list `url`) plus «Тільки бренд» and «Без стилю: мікс ефектів»,
+so they pick by look, not by name. Those two need their own examples, made once per person on their own video: brand = a
+~12 s draft (`style: "brand"`, the hook title, one camera move, one brand panel such as `push`), mix = ~1.3 s cuts of 8-9
+different effects from a mix draft joined into one clip. Upload them and put the urls in
+`<REELS_HOME>/.motion_previews.json` as `"style:brand"` / `"style:mix"`: `review_sync.py export` passes them as
+`stylePreviews`. Text cards (the hook first) can be dragged on the video («Перемістити»): the review doc keeps
+`board.<id>.place` and `import` writes the card's `x` / `y`.
 
 ## «Стиль» tab (their style, in rounds)
 

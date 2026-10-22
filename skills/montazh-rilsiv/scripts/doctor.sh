@@ -58,6 +58,11 @@ if [ -x "$VPY" ] && "$VPY" -c "import fontTools, brotli, cv2" 2>/dev/null; then 
 elif { [ -x "$VPY" ] || python3 -m venv "$(wp "$VENV")" >/dev/null 2>&1; } && "$VPY" -m pip install -q fonttools brotli Pillow opencv-python-headless >/dev/null 2>&1; then ok "font measuring + face finding installed in $VENV"
 else warn "fontTools/OpenCV not installed" "text sizes fall back to an estimate and graphics use the default face zone; run: python -m venv ~/reels/.venv && ~/reels/.venv/Scripts/python.exe -m pip install fonttools brotli Pillow opencv-python-headless"; fi
 
+# the Remotion motion library in their brand (scripts/setup_motion.sh): brand elements, motion reels, site animations
+MH="${MOTION_HOME:-$HOME/motion}"
+if [ -d "$MH/node_modules/@remotion/cli" ] && [ -f "$MH/scripts/sync-brand.py" ]; then ok "motion library (Remotion) in $MH"
+else warn "motion library (Remotion) not installed" "run: bash scripts/setup_motion.sh (brand elements and motion reels need it)"; fi
+
 FREE_GB=$(df -Pk "$HOME" | awk 'NR==2{print int($4/1048576)}')
 [ "$FREE_GB" -ge 10 ] && ok "${FREE_GB} GB free disk" || no "only ${FREE_GB} GB free disk" "free up 10+ GB (35+ GB for 4K exports)"
 

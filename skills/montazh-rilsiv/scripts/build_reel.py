@@ -35,7 +35,10 @@ edit.json (written by auto_edit.py, then Claude marks accents and adds cards):
                                                      src file's folder is copied along (fonts, js). Default box = full frame.
      overlay {src: "overlays/<file or asset id>", mode: "tiny"|"small-r"|"small-l"|"big"|"full", effect: "soft"|"slide"|"polaroid"|"glass"|"zoom", box?: [x,y,w,h]}
                                                      an image or video they uploaded on the review page (or dropped in the folder):
-                                                     a small card top right/left, a wide panel above the head, or full screen; video muted
+                                                     a small card top right/left, a wide panel above the head, or full screen; video muted.
+                                                     A video with an alpha channel (VP8/VP9 WebM, ProRes 4444: a transparent
+                                                     motion element from Remotion, After Effects...) goes over the whole frame with no
+                                                     border or entrance of its own, and captions step aside ("captions": true keeps them)
      bigtext {text: "big / words", y?: 330, size?, color?}   huge words in the head font; with "behind": true they sit behind the person
      (any card) "behind": true   between the background and the person: the person is cut out for that window (local AI, ~13 s per second of video, cached)
      follow {words: [{text, accent}], framing: "wide"}   caption-camera-follow in brand colours/font: one sentence
@@ -58,7 +61,9 @@ edit.json (written by auto_edit.py, then Claude marks accents and adds cards):
   Image paths: relative to the reel folder, or to ~/reels/assets/, or absolute.
 """
 import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
-import html, json, os, re, shutil, subprocess, sys
+import base64, html, json, os, re, shutil, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import brand_recolor
 from pathlib import Path
 
 reel = Path(sys.argv[1]).expanduser()
@@ -199,6 +204,13 @@ def fit(text, want, extra=0, role="head"):
     if adv: return max(24, min(int(want), int((SAFE - 2 * extra) / (adv * 1.04))))
     return max(24, min(int(want), int((SAFE - 2 * extra) / (max(len(text), 1) * EM))))
 
+def has_alpha(p):
+    """True for a video with a transparent channel (VP8/VP9 WebM with alpha_mode, ProRes 4444)."""
+    o = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=pix_fmt:stream_tags=alpha_mode", "-of", "compact",
+                        str(p)], capture_output=True, text=True).stdout.lower()
+    return "alpha_mode=1" in o or "yuva" in o
+
+
 def dur_of(p):
     return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
                                 capture_output=True, text=True, check=True).stdout)
@@ -206,6 +218,44 @@ DUR = round(dur_of(reel / "master.mp4") - 0.02, 2)
 q = lambda t: round(round(max(t, 0) * FPS) / FPS, 4)
 esc = lambda s: html.escape(s, quote=False)
 case = lambda s: s.lower() if CASE == "lower" else s
+# Caption styles from the HyperFrames catalog (status "caption", references/motions.md): edit.json "caption_style" (or
+# brand.json captions "anim") names one, and it draws the captions instead of the brand's own: their words with their
+# timing, grouped as in edit.json captions, accent words as its key words, in the brand fonts and colours.
+CAP_STYLE = edit.get("caption_style") or CAPS.get("anim")
+if CAP_STYLE and edit.get("captions") and not CAPCUT:
+    edit["cards"] = edit.get("cards", []) + [{"type": "motion", "name": CAP_STYLE, "start": 0, "end": DUR, "id": "capstyle", "sfx": False, "layout": "front",
+        "tone": "clear", "box": [-420, int(CAP_Y) - MOTION_PRESETS.get(CAP_STYLE, {}).get("cap_at", 1020), 1920, 1080], "_capgroups": [c for c in edit["captions"] if not c.get("plain")]}]
+    edit["captions"] = []
+def caption_patch(mt, groups, dur):
+    """Their words into a catalog caption style: the WORDS / TRANSCRIPT list, its groups and key words, the duration, and a
+    text width that fits the vertical frame (the style is drawn 1920 wide and shown cropped to the middle 1080)."""
+    words, pairs, keys = [], [], []
+    for g in groups:
+        a = len(words)
+        for j, w in enumerate(g["words"]):
+            nxt = g["words"][j + 1]["t"] if j + 1 < len(g["words"]) else g["end"]
+            if w.get("accent"): keys.append(len(words))
+            words.append({"text": case(w["text"]), "start": round(w["t"], 3), "end": round(max(nxt, w["t"] + 0.08), 3)})
+        if len(words) > a: pairs.append([a, len(words) - 1])
+    if not words: return mt
+    J = json.dumps(words, ensure_ascii=False)
+    mt = re.sub(r"((?:var|const|let)\s+(?:WORDS|TRANSCRIPT|W)\s*=\s*)\[.*?\];", lambda m: m.group(1) + J + ";", mt, count=1, flags=re.S)
+    mt = re.sub(r"((?:var|const|let)\s+RAW_GROUPS\s*=\s*)\[.*?\];", lambda m: m.group(1) + json.dumps(pairs) + ";", mt, count=1, flags=re.S)
+    mt = re.sub(r"(KEYWORDS\s*=\s*new Set\()\[[^\]]*\]", lambda m: m.group(1) + json.dumps(keys), mt)
+    if "var BLOCKS" in mt:                           # editorial: two lines a block, accent words large
+        bl = [{"line1": [[k, "e" if k in keys else "n"] for k in range(a, a + (b - a + 2) // 2)],
+               "line2": [[k, "e" if k in keys else "n"] for k in range(a + (b - a + 2) // 2, b + 1)] or None} for a, b in pairs]
+        mt = re.sub(r"(var\s+BLOCKS\s*=\s*)\[.*?\n\s*\];", lambda m: m.group(1) + json.dumps(bl) + ";", mt, count=1, flags=re.S)
+    mt = re.sub(r'data-duration="[0-9.]+"', f'data-duration="{dur}"', mt, count=1)
+    mt = re.sub(r"(var\s+DURATION\s*=\s*)[0-9.]+", lambda m: m.group(1) + str(dur), mt)
+    mt = re.sub(r":\s*8\.0;", f": {dur};", mt)
+    mt = re.sub(r"(var\s+(?:SAFE_ZONE_WIDTH|SAFE_WIDTH|PILL_MAX_WIDTH)\s*=\s*)\d+", lambda m: m.group(1) + "940", mt)
+    mt = re.sub(r"(fitFontSize\([^;]*?,\s*)1[4-9]\d\d\)", lambda m: m.group(1) + "940)", mt)   # fit lines into 940 px, not 1720
+    k = CAP_PX / 80                                  # their caption size: the styles are drawn for ~72-88 px
+    mt = re.sub(r"(fitFontSize\([^,]+,\s*)(\d+)(,)", lambda m: m.group(1) + str(round(int(m.group(2)) * k)) + m.group(3), mt)
+    mt = re.sub(r"(var\s+(?:BASE_FONT_SIZE|CAPTION_FONT_SIZE|ACCENT_FONT_SIZE|MIN_FONT_SIZE|BASE_FONT)\s*=\s*)(\d+)",
+                lambda m: m.group(1) + str(round(int(m.group(2)) * k)), mt)
+    return mt
 
 # ---- project folder: template files are copied, never installed -------------------------------------------------
 proj = reel / "proj"
@@ -214,17 +264,19 @@ if proj.exists(): shutil.rmtree(proj)
 shutil.copy(ENGINE / "gsap.min.js", proj / "vendor/gsap.min.js")
 DRAFT = bool(os.environ.get("REEL_DRAFT"))   # fast review draft: rendered at 540x960 from a 540p copy of the master (a quarter of the pixels)
 _mh = int(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height", "-of", "csv=p=0", str(reel / "master.mp4")], capture_output=True, text=True).stdout or 1920)
+def link_or_copy(src, dst):   # a hard link, not a second copy of the video on disk (copy only across volumes)
+    try: os.link(src, dst)
+    except OSError: shutil.copy(src, dst)
 if DRAFT and _mh <= 960:   # cut.py already made a 540p draft master
-    shutil.copy(reel / "master.mp4", proj / "master.mp4")
+    link_or_copy(reel / "master.mp4", proj / "master.mp4")
 elif DRAFT:
     m540 = reel / "master_540.mp4"
     if not m540.exists() or m540.stat().st_mtime < (reel / "master.mp4").stat().st_mtime:
         subprocess.run(["nice", "-n", "10", "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(reel / "master.mp4"), "-vf", "scale=540:960",
                         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-g", "30", "-c:a", "copy", str(m540)], check=True)
-    shutil.copy(m540, proj / "master.mp4")
+    link_or_copy(m540, proj / "master.mp4")
 else:
-    try: os.link(reel / "master.mp4", proj / "master.mp4")
-    except OSError: shutil.copy(reel / "master.mp4", proj / "master.mp4")
+    link_or_copy(reel / "master.mp4", proj / "master.mp4")
 for f in (ENGINE / "sfx").glob("*.wav"): shutil.copy(f, proj / "sfx" / f.name)
 for f in (Path(__file__).resolve().parent.parent / "sfx").glob("*.wav"): shutil.copy(f, proj / "sfx" / f.name)   # the skill's CC0 library
 for f in (HOME / "assets" / "sfx").glob("*.wav"): shutil.copy(f, proj / "sfx" / f.name)   # their own sound library wins on a shared name
@@ -248,6 +300,17 @@ def img(src):
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(cand), "-vf", "scale='min(1280,iw)':-2", str(dst)], check=True)
             return f"img/{dst.name}"
     print(f"warning: image not found: {src}"); return ""
+def avatar_img(own=None):
+    """Their profile photo for follow cards: the card's "avatar", else brand.json "avatar" (ask them for it once and save it there).
+    Without one the slot shows the first letter of their name on the brand colour, never someone else's logo."""
+    src = own or brand.get("avatar")
+    if src: return img(src)
+    print("warning: follow card without a profile photo: ask them for one, save it as brand.json \"avatar\" (meanwhile: their initial)")
+    letter = html.escape((brand.get("name") or "?").strip()[:1].upper())
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="{POP}"/>'
+           f'<text x="50" y="67" font-family="Helvetica,Arial" font-weight="700" font-size="48" text-anchor="middle" fill="{_DEEP}">{letter}</text></svg>')
+    out = proj / "img" / "_avatar.svg"; out.write_text(svg)
+    return f"img/{out.name}"
 
 # fonts: brand.json "fonts": {"head": {...}, "body": {...}, "accent": {...}}, each {family, file?, weight?, style?}
 FALLBACK = "'Helvetica Neue', Helvetica, Arial, sans-serif"   # single quotes: these go inside style="..." attributes
@@ -290,11 +353,12 @@ n_sfx = 0
 CAPCUT_NAME = {"swish": "whoosh-short", "whoosh": "whoosh-short", "pop": "pop", "snap": "snap", "typing": "typing",
                "chime": "chime", "sparkle": "sparkle", "coin": "coin"}   # local file -> CapCut library sound (capcut_draft.py)
 def sfx(name, t, db=-12, level="subtle", dur=None):
-    """Subtle, ASMR-clean accents: every effect sits 10-15 dB under the voice (db = level relative to full scale).
+    """Quiet background accents, at most 15% of full volume (brand.json "sfx_max"), one per "sfx_gap" seconds (db = relative level).
     level = lowest brand sfx setting that still plays it. CapCut route: recorded for CapCut's real library sounds."""
     global n_sfx
     global CARD_SFX
     if CARD_MUTE: return                                  # this graphic's sound was switched off in the review
+    approved = bool(CARD_SFX and level == "subtle")
     if CARD_SFX and level == "subtle":                    # the sound approved in the review replaces the entrance sound
         name, db = {"sparkle": "chime"}.get(CARD_SFX["name"], CARD_SFX["name"]) if not CAPCUT else CARD_SFX["name"], CARD_SFX.get("db", db)
         CARD_SFX = None
@@ -302,7 +366,12 @@ def sfx(name, t, db=-12, level="subtle", dur=None):
         name = S_SND["events"][SFX_EVENT[name]]
         if not name: return
     if brand.get("sfx", "subtle") == "none" or (level == "lots" and brand.get("sfx") != "lots") or t >= DUR: return
-    vol = round(min(1.0, 10 ** ((db + brand.get("sfx_gain_db", 8)) / 20)), 3)   # +8 dB: clearly audible under a voice with no music bed
+    # Inna, 2026-10-22: sounds sit in the background, at most 15% of full volume, and not on every graphic:
+    # one accent sound per "sfx_gap" seconds (default 10); a sound picked in the review always plays.
+    if not approved and any(abs(t - x) < brand.get("sfx_gap", 10) for x in SFX_TIMES): return
+    SFX_TIMES.append(t)
+    vmax = brand.get("sfx_max", 0.15)
+    vol = round(min(vmax, vmax * 10 ** ((db + 12) / 20)), 3)   # the loudest accent (-12) = vmax, quieter ones scale down from it
     if CAPCUT:
         SFX_OUT.append({"name": CAPCUT_NAME.get(name, name), "t": round(max(t, 0), 2), "vol": vol, **({"dur": dur} if dur else {})}); return
     p = proj / "sfx" / f"{name}.wav"
@@ -312,6 +381,7 @@ def sfx(name, t, db=-12, level="subtle", dur=None):
     audio.append(f'<audio id="sx{n_sfx}" src="sfx/{name}.wav" data-start="{q(t)}" data-duration="{q(d)}" '
                  f'data-track-index="{20 + n_sfx}" data-volume="{vol}"></audio>')
 SFX_OUT = []
+SFX_TIMES = []
 CARD_MUTE = False
 CARD_SFX = None
 ZONES = []   # where each graphic and caption sits, for the Instagram safe-zone check (scripts/safezones.py)
@@ -338,6 +408,83 @@ PHRASE_ENDS = [w["end"] for k, w in enumerate(_tw) if re.search(r"[.,!?;:]$", w[
                or _tw[k + 1]["start"] - w["end"] > 0.35]
 def phrase_end(t):
     return next((e + 0.15 for e in PHRASE_ENDS if e > t + 1.0), min(t + 2.5, DUR))
+
+def cut_joins():
+    """Where the cuts sit in master.mp4: the ends of edl.json's kept pieces, at the brand's speed (as precheck.py prints them)."""
+    try:
+        from pacing import pacing
+        speed = pacing(brand)["speed"]
+        t, out = 0.0, []
+        for a_, b_ in json.load(open(reel / "edl.json"))["keep"][:-1]:
+            t += (b_ - a_) / speed; out.append(round(t, 3))
+        return out
+    except Exception:
+        return []
+JOINS = cut_joins()
+
+def shader_transition(src, comp, join, half, frame_px):
+    """A HyperFrames shader transition (cross-warp-morph, sdf-iris, ...) between the two real shots of a join.
+    The catalog file is a 1920x1080 demo that warps two drawn scenes (#s1/#s2) on a 1200x1080 canvas; here it becomes a
+    1080x1920 full-frame layer whose textures are the frame where the card starts and the frame where it ends, so the
+    shader starts exactly on the live picture before the cut and lands exactly on the one after it (no jump either side)."""
+    a_, b_ = q(join - half), q(join + half)
+    dur = q(b_ - a_)
+    shots = []
+    for t_ in (a_, b_ - 1 / FPS):
+        r = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-ss", f"{t_:.4f}", "-i", str(reel / "master.mp4"), "-frames:v", "1",
+                            "-vf", f"scale={frame_px}:-2", "-q:v", "3", "-f", "image2pipe", "-c:v", "mjpeg", "-"], capture_output=True, check=True)
+        shots.append("data:image/jpeg;base64," + base64.b64encode(r.stdout).decode())
+    t = re.sub(r"<audio[^>]*>(</audio>)?", "", src.read_text())
+    t = t.replace('data-composition-id="main"', f'data-composition-id="{comp}"').replace('__timelines["main"]', f'__timelines["{comp}"]')
+    t = re.sub(r"width: 1920px;(\s*)height: 1080px;", r"width: 1080px;\1height: 1920px;", t)
+    t = t.replace('data-width="1920"', 'data-width="1080"').replace('data-height="1080"', 'data-height="1920"')
+    t = t.replace('data-duration="4"', f'data-duration="{dur}"')
+    t = re.sub(r'width="1200"(\s*)height="1080"', r'width="1080"\1height="1920"', t)
+    t = re.sub(r"width: 1200px;(\s*)height: 1080px;(\s*)z-index: 10;", r"width: 1080px;\1height: 1920px;\2z-index: 10;", t)
+    t = t.replace("gl.viewport(0, 0, 1200, 1080)", "gl.viewport(0, 0, 1080, 1920)").replace('"u_resolution"), 1200, 1080', '"u_resolution"), 1080, 1920')
+    # the demo's grid, side panel and drawn scenes never show; the root is see-through until the shots are on the canvas
+    sel = f'[data-composition-id="{comp}"]'
+    t = t.replace("</style>", f"{sel} {{ background: transparent !important; }}\n"
+                  + ", ".join(f"{sel} {k}" for k in (".bp-grid", ".bp-divider", ".bp-number", ".bp-right", ".scene")) + " { display: none !important; }\n</style>", 1)
+    t = t.replace('<div id="s1" class="scene"', f'<img id="tr_s1" src="{shots[0]}" alt="" style="display:none" />\n'
+                  f'      <img id="tr_s2" src="{shots[1]}" alt="" style="display:none" />\n      <div id="s1" class="scene"', 1)
+    # captureScene draws the real shot instead of the demo scene
+    t = t.replace("function captureScene(sceneId) {", """function shotReady(id) { var im = document.getElementById("tr_" + id); return im && im.complete && im.naturalWidth > 0; }
+        function captureScene(sceneId) {
+          var c = document.createElement("canvas");
+          c.width = 1080;
+          c.height = 1920;
+          c.getContext("2d").drawImage(document.getElementById("tr_" + sceneId), 0, 0, 1080, 1920);
+          var tex = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+          sceneTextures[sceneId] = tex;
+        }
+        function captureDemoScene(sceneId) {""", 1)
+    # textures only from decoded shots: until both are decoded the canvas stays hidden and the live video shows through
+    t = re.sub(r'captureScene\("s1"\);\s*captureScene\("s2"\);\s*glCanvas\.style\.display = "block";\s*renderShader\(progPass, sceneTextures\["s1"\], sceneTextures\["s1"\], 0\);',
+               """function shotsUp() {
+          if (sceneTextures["s1"] && sceneTextures["s2"]) return true;
+          if (!shotReady("s1") || !shotReady("s2")) return false;
+          captureScene("s1");
+          captureScene("s2");
+          glCanvas.style.display = "block";
+          return true;
+        }
+        ["s1", "s2"].forEach(function (id) { var im = document.getElementById("tr_" + id); if (im.decode) im.decode().then(shotsUp, function () {}); });
+        if (shotsUp()) renderShader(progPass, sceneTextures["s1"], sceneTextures["s1"], 0);""", t, count=1)
+    t = t.replace("onUpdate: function () {\n            var t = tl.time();", "onUpdate: function () {\n            if (!shotsUp()) return;\n            var t = tl.time();", 1)
+    t = t.replace("if (t >= 1.0 && t < 3.0) {", f"if (t < {dur}) {{").replace("easeInOut((t - 1.0) / 2.0)", f"easeInOut(Math.max(0, t) / {dur})")
+    t = t.replace("} else if (t >= 3.0) {", f"}} else if (t >= {dur}) {{")
+    t = t.replace("return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;",   # snappier: cubic in-out, most of the change mid-cut
+                  "return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;")
+    t = t.replace('tl.to({ v: 0 }, { v: 1, duration: 4, ease: "none" }, 0);', f'tl.to({{ v: 0 }}, {{ v: 1, duration: {dur}, ease: "none" }}, 0);')
+    ok = all(s in t for s in ("if (!shotsUp()) return;", f"if (t < {dur})", f"duration: {dur}, ease", "gl.viewport(0, 0, 1080, 1920)", 'id="tr_s2"'))
+    return t, a_, b_, ok
 
 # the face (scripts/face_box.py -> face.json {"box": [x, y, w, h]}, cut-reel pixels): lists and steps never cover it
 _fj = reel / "face.json"
@@ -396,6 +543,13 @@ for n in sorted({n for n in _mnames if _mnames.count(n) > 1}): print(f"variety: 
 for k in range(len(_seq) - 2):
     if _seq[k] == _seq[k + 1] == _seq[k + 2]: print(f"variety: three '{_seq[k]}' graphics in a row - swap one for a list, split, push or steps")
 
+# shader transitions are loud: at most 2 per reel, only where the topic changes, at least 12 s apart
+_trs = sorted(k["start"] for k in edit.get("cards", []) if k["type"] == "motion"
+              and (k.get("layout") or MOTION_PRESETS.get(k.get("name"), {}).get("card", {}).get("layout")) == "transition"
+              and any("captureScene" in f.read_text() for f in (HF / "compositions").rglob(f"{k.get('name')}.html")))
+if len(_trs) > 2: print(f"variety: {len(_trs)} shader transitions - keep at most 2 per reel, only on a change of topic")
+for _x, _y in zip(_trs, _trs[1:]):
+    if _y - _x < 12: print(f"variety: shader transitions at {_x:.1f}s and {_y:.1f}s are {_y - _x:.1f} s apart - keep them 12 s or more apart")
 quiet = []                                      # spans where a card carries its own words, so captions step aside
 # "behind": true on a card puts it between the background and the person: the person is cut out (AI matting, local)
 # for that window and laid back on top, so text, photos or motion sit behind them.
@@ -442,10 +596,10 @@ for i, c in enumerate(edit.get("cards", [])):
             roles = ["accent" if LH.get("l2acc") and j % 2 else "head" for j in range(len(lines))]
             sizes = [c.get("size") or min(fit(x, 230, 230 // 16 + float(LH.get("sw") or 0), role=r), brand.get("title_max_px", 999)) for x, r in zip(lines, roles)]
             lk = lambda j: {**LH, "c1": LH["l2"].get("c1") or LH.get("c1"), "c2": LH["l2"].get("c2")} if j % 2 and LH.get("l2") else LH
-            back.append(f'<div id="{cid}" class="title" style="{font("head", sizes[0])};top:{c.get("y", brand.get("title_y", 360))}px;letter-spacing:{brand.get("title_tracking", -0.045)}em;text-shadow:none">'
+            back.append(f'<div id="{cid}" class="title" style="{font("head", sizes[0])};top:{c.get("y", brand.get("title_y", 360))}px;left:{c.get("x", 90) - 90}px;letter-spacing:{brand.get("title_tracking", -0.045)}em;text-shadow:none">'
                         + "".join(f'<div class="tl" style="{font(r, px) if r != "head" else f"font-size:{px}px"};text-align:{("left", "right")[j % 2] if len(lines) > 1 else "center"}">'
                                   f'<span style="{look_bg(LH)}">{look_run(lk(j), esc(x), "hk")}</span></div>' for j, (x, px, r) in enumerate(zip(lines, sizes, roles))) + "</div>")
-        else: back.append(f'<div id="{cid}" class="title" style="{font("head", sizes[0])};top:{c.get("y", brand.get("title_y", 360))}px;color:{c.get("color", TITLE_COLOR)};letter-spacing:{brand.get("title_tracking", -0.045)}em">'
+        else: back.append(f'<div id="{cid}" class="title" style="{font("head", sizes[0])};top:{c.get("y", brand.get("title_y", 360))}px;left:{c.get("x", 90) - 90}px;color:{c.get("color", TITLE_COLOR)};letter-spacing:{brand.get("title_tracking", -0.045)}em">'
                     + ('<div class="tg glass">' if brand.get("title_glass") else "")
                     + "".join(f'<div class="tl" style="font-size:{px}px;text-align:{brand.get("title_align") or (("left", "right")[j % 2] if len(lines) > 1 and not brand.get("title_glass") else "center")}{st(px)}">{esc(x)}</div>' for j, (x, px) in enumerate(zip(lines, sizes)))
                     + ("</div>" if brand.get("title_glass") else "") + "</div>")
@@ -497,7 +651,23 @@ for i, c in enumerate(edit.get("cards", [])):
                 if _im.mode in ("RGBA", "LA", "P") and _im.convert("RGBA").getchannel("A").getextrema()[0] < 250:
                     frame, inner_r, cover = "", "0", "width:100%;height:100%;object-fit:contain;display:block"
             except Exception: pass
-        if src.suffix.lower() in (".mp4", ".mov", ".m4v", ".webm"):
+        alpha = src.suffix.lower() in (".webm", ".mov") and has_alpha(src)
+        if alpha:   # a transparent motion element (Remotion, After Effects...): whole frame, no frame, its own animation
+            frame, inner_r, cover = "", "0", "width:100%;height:100%;object-fit:contain;display:block"
+            if "box" not in c and c.get("mode", "full") == "full": x, y, ow, oh = 0, 0, 1080, 1920
+            full = False                                                     # in front of the person, not behind the camera
+            if not c.get("captions"): quiet.append((a, b))                   # the element carries the words: captions step aside
+        if alpha:
+            b = min(b, a + dur_of(src))
+            dst = proj / "img" / f"ov{i}.webm"                               # VP8 + alpha: the browser keeps the transparency
+            codec = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name", "-of", "csv=p=0",
+                                    str(src)], capture_output=True, text=True).stdout.strip()
+            dec = {"vp8": ["-c:v", "libvpx"], "vp9": ["-c:v", "libvpx-vp9"]}.get(codec, [])   # ffmpeg's own VP8/VP9 decoders drop the alpha
+            subprocess.run(["ffmpeg", "-v", "error", "-y", *dec, "-i", str(src), "-an", "-vf", "fps=30", "-c:v", "libvpx", "-pix_fmt", "yuva420p",
+                            "-auto-alt-ref", "0", "-b:v", "8M", "-crf", "6", str(dst)], check=True)
+            media = (f'<video id="{cid}v" src="img/{dst.name}" muted playsinline data-start="{q(a)}" data-duration="{q(b - a)}" '
+                     f'data-media-start="0" data-track-index="{9 + i}" style="{cover}"></video>')
+        elif src.suffix.lower() in (".mp4", ".mov", ".m4v", ".webm"):
             b = min(b, a + dur_of(src))                                      # never outlast the clip
             dst = proj / "img" / f"ov{i}.mp4"                                # one clean H.264 copy at its display size, no audio
             vf = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920" if full else "scale=1280:-2"
@@ -512,6 +682,9 @@ for i, c in enumerate(edit.get("cards", [])):
             f'<div class="m" style="width:100%;height:100%;overflow:hidden;border-radius:{inner_r}">{media}</div></div>')
         show(f"#{cid}", a, b, 0.15)
         side = -1 if x + ow / 2 < 540 else 1                               # flies in / tilts from the side of the frame it sits on
+        if alpha:                       # the element animates itself (no entrance, no sfx) and keeps to the Reels safe area itself
+            if c.get("box"): zone(cid, "overlay", a, b, (x, y, ow, oh), text=False, full=False)
+            continue
         js.append({
             "slide": f'tl.fromTo("#{cid}",{{x:{side * 760},rotation:{side * 6}}},{{x:0,rotation:0,duration:0.55,ease:"back.out(1.3)"}},{q(a)});',
             "polaroid": f'tl.fromTo("#{cid}",{{y:-260,rotation:{-side * 16},scale:0.9}},{{y:0,rotation:{-side * 4},scale:1,duration:0.6,ease:"back.out(1.5)"}},{q(a)});',
@@ -615,15 +788,54 @@ for i, c in enumerate(edit.get("cards", [])):
             print(f"warning: motion {c['name']!r} not cached - add it: cd {HF} && npx hyperframes add {c['name']}"); continue
         c = {**MOTION_PRESETS.get(c["name"], {}).get("card", {}), **c, "_own": tuple(c)}   # tested placement / tone, the card wins
         rel = mount(src); txt = src.read_text()
+        if not re.search(r'data-composition-id="([^"]+)"', txt):
+            print(f"warning: motion {c['name']!r} is a raw snippet with no composition (wrap_snippets.py could not wrap it): skipped"); continue
         comp_id = re.search(r'data-composition-id="([^"]+)"', txt).group(1)
+        if c.get("layout") == "transition" and "captureScene" in txt:   # a shader transition: sits on a cut, warps the shot before into the shot after
+            near = min(JOINS, key=lambda j: abs(j - c["start"]), default=None)
+            join = c.get("join") or (near if near is not None and abs(near - c["start"]) <= 1.5 else None)
+            if join is None:
+                print(f"warning: transition {c['name']!r} at {c['start']:.1f}s has no cut within 1.5 s (edl.json): put it on a join"); join = c["start"]
+            comp = f"tr-{i}"
+            mt, a, b, ok = shader_transition(src, comp, join, float(c.get("half", 0.19)), 540 if DRAFT else 1080)   # ~0.38 s: quick, these are loud
+            if not ok: print(f"warning: transition {c['name']!r}: this catalog file has a different layout, check it in the draft")
+            (proj / rel).unlink(missing_ok=True)
+            rel = f"compositions/{comp}.html"; (proj / rel).write_text(mt)
+            mid.append(f'<div id="{cid}" class="clip" data-composition-id="{comp}" data-composition-src="{rel}" '
+                       f'data-start="{a}" data-duration="{q(b - a)}" data-track-index="{40 + i}" data-width="1080" data-height="1920" '
+                       f'style="position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:0"></div>')   # z-index: its canvas (z 10) stays under the captions
+            sfx("whoosh_soft", a, -24)                    # quiet: the picture already does the work
+            print(f"transition {c['name']} on the cut at {join:.2f}s ({a:.2f}-{b:.2f}s)")
+            zone(cid, "transition", a, b, (0, 0, W, H), text=False, full=True)
+            continue
         mt = (proj / rel).read_text()
-        for k, v in (c.get("replace") or {}).items():    # motions with their text baked in: swap it for her words
+        _cm = MOTION_PRESETS.get(c["name"], {})          # follow cards etc.: their name / handle from brand.json, UI words in their language
+        rep = {**_cm.get("replace_default", {}), **{k: brand[f] for k, f in _cm.get("brand_text", {}).items() if brand.get(f)},
+               **(c.get("replace") or {})}
+        rep = {k: v for k, v in rep.items() if k and not str(v).startswith("<")}   # motions with their text baked in: swap it for their words
+        if c.get("_capgroups") is not None:            # a caption style: their words, minus the spans where a card carries the words
+            mt = caption_patch(mt, [g for g in c["_capgroups"] if not any(a - 0.05 <= g["start"] < b for a, b in quiet)], DUR)
+        if _cm.get("avatar") or c.get("avatar"):         # someone else's logo in the avatar slot -> their photo
+            av = avatar_img(c.get("avatar"))
+            if av:
+                mt = re.sub(r'src="assets/(?:avatar|logo)[^"]*"', f'src="{av}"', mt)
+                mt = mt.replace("<style>", f'<style>\n[data-composition-id="{comp_id}"] .avatar {{ background: url({av}) center/cover no-repeat !important; }}'
+                                f' [data-composition-id="{comp_id}"] .avatar svg {{ display: none !important; }}\n', 1)
+        for k in rep:
             if k not in mt: print(f"warning: motion {c['name']}: text {k!r} not found, nothing replaced")
-            mt = mt.replace(k, html.escape(v, quote=False))
+        if rep:                                          # one pass, longest first, whole words only: "Follow" never eats "Following"
+            rx = re.compile("|".join(r"(?<![\w-])" + re.escape(k) + r"(?![\w-])" for k in sorted(rep, key=len, reverse=True)))
+            mt = rx.sub(lambda m: html.escape(rep[m.group(0)], quote=False), mt)
         if not c.get("keep_fonts"):                      # the brand's fonts on every catalog motion (their Oswald/Inter/Caveat
             brand_font = (f'[data-composition-id="{comp_id}"], [data-composition-id="{comp_id}"] *:not(code):not(pre) '   # have no
                           f'{{ font-family: "BrandSans", {FALLBACK} !important; }}')                           # Cyrillic either)
             mt = mt.replace("<style>", "<style>\n" + "\n".join(font_css + BRAND_SANS) + "\n" + brand_font + "\n", 1)
+        if not c.get("keep_ui"):                         # into her palette: the motion's own greens/blues/oranges become her accents,
+            _lay = c.get("layout") or ("front" if c.get("tone") == "clear" else None)
+            mt = brand_recolor.recolor(mt, C, over=_lay in ("front", "behind", "over", "dim") or c.get("place") == "low")   # its darks/lights her dark/light (real product UIs keep theirs: "keep_ui")
+        _lay = c.get("layout") or ("front" if c.get("tone") == "clear" else None)
+        if _lay in ("front", "behind", "over", "dim") or c.get("place") == "low":   # over the video: its own full-frame background goes
+            mt = brand_recolor.transparent_bg(mt, comp_id)
         if c.get("ink"):                                 # text-only motions with a hard-coded dark ink: "light" / "pop" / "#hex"
             ink = {"light": LIGHT, "pop": POP, "soft": _SOFT, "dark": MAIN}.get(c["ink"], c["ink"])
             mt = mt.replace("<style>", f'<style>\n[data-composition-id="{comp_id}"] *:not(svg):not(svg *) {{ color: {ink} !important; }}\n', 1)
@@ -633,6 +845,8 @@ for i, c in enumerate(edit.get("cards", [])):
         nw, nh = (int(re.search(r'data-width="(\d+)"', txt).group(1)), int(re.search(r'data-height="(\d+)"', txt).group(1))) \
             if re.search(r'data-width="(\d+)"', txt) else (1080, 1080)
         vars_ = dict(c.get("vars", {}))
+        if (c.get("place") == "low" or c.get("layout") in ("front", "behind", "over") or c.get("tone") == "clear") and not c.get("keep_ui"):
+            vars_ = brand_recolor.over_vars(txt, vars_)   # light ink over the video: tone "ink" (for light frames) -> "paper"
         if c.get("images"):                              # carousels: fill every image slot, cycling the supplied images
             slots = sorted({int(m) for m in re.findall(r'"id":\s*"image(\d+)"', txt)})
             ims = [img(x) for x in c["images"]]
@@ -653,16 +867,23 @@ for i, c in enumerate(edit.get("cards", [])):
         panel_bg = {"light": LIGHT}.get(c.get("tone"), _DEEP)
         def fit_into(ax, ay, aw, ah):                    # a fixed-size motion scaled to fit an area, centred
             s_ = min(aw / nw, ah / nh); return [round(ax + (aw - nw * s_) / 2), round(ay + (ah - nh * s_) / 2), round(nw * s_), round(nh * s_)]
-        if c.get("place") in ("top", "chest") and not own_box and layout in ("front", "behind", "bubble"):   # a band off this reel's face
+        if layout == "over": layout = "front"
+        if c.get("place") == "low" and not own_box:      # over the video from the chin down: never moves or crops her
+            fx, fy, fw, fh = FACE or (300, 540, 480, 620)
+            top = min(int(fy + 0.86 * fh) + 10, 1260)    # face.json pads the face box below the chin
+            c["box"] = [40, top, 1000, 1660 - top]
+            if fixed:
+                z = c.get("zoom", 1.5); bx, by, bw_, bh_ = fit_into(*c["box"])   # 16:9 motions have wide empty margins: blown up, the overspill is transparent
+                c["box"] = [round(bx - bw_ * (z - 1) / 2), round(by - bh_ * (z - 1) / 2), round(bw_ * z), round(bh_ * z)]
+            if layout not in ("front", "behind", "bubble"): layout = "front"
+            if layout != "bubble": c.setdefault("tone", "clear")
+        elif c.get("place") in ("top", "chest") and not own_box and layout in ("front", "behind", "bubble"):   # a band off this reel's face
             fx, fy, fw, fh = FACE or (300, 540, 480, 620)
             if c["place"] == "top": c["box"] = [40, 225, 1000, max(240, min(440, int(fy + 0.15 * fh) - 225))]   # face.json starts at the hair
             else: top = int(fy + fh + 10); c["box"] = [40, min(top, 1170), 1000, max(260, min(460, 1490 - min(top, 1170)))]
             if layout == "bubble" and c.get("shape") == "circle":
                 bx, by, bw_, bh_ = c["box"]; c["box"] = [round(bx + (bw_ - bh_) / 2), by, bh_, bh_]
             if fixed: c["box"] = fit_into(*c["box"])
-            if c["box"][3] < 380 and not c.get("keep_band"):   # catalog text sizes follow the box height (cqh): a thin band
-                layout = "split"; c.pop("box", None)          # around a big face makes them unreadable, so the screen divides instead
-                if c.get("tone") == "clear": c["tone"] = "dark"
         if layout == "split":
             PANEL = c.get("panel", 820 if fixed else 1080)   # size-free motions size their text by the panel: a taller panel reads on a phone                  # the brand panel's height; she keeps the rest of the frame
             fx, fy, fw, fh = FACE or (300, 500, 480, 600)
@@ -684,6 +905,16 @@ for i, c in enumerate(edit.get("cards", [])):
                       f'tl.to("#{cid}s .spw",{{top:0,height:{H},duration:0.45,ease:"power3.inOut"}},{q(b - 0.45)});'
                       f'tl.to("#{cid}s .spp",{{clipPath:"inset(0% 0% 100% 0%)",duration:0.45,ease:"power3.inOut"}},{q(b - 0.45)});tl.set("#{cid}s",{{autoAlpha:0}},{q(b)});')
             sfx("whoosh_soft", b - 0.45, -16); quiet.append((a, b)); zone(cid, "split", a, b, (0, 0, W, H), full=True)
+        elif layout == "dim":   # an effect too big to keep off the face: the video stays as a dimmed background, the effect on top
+            if not own_box:
+                c["box"] = fit_into(40, 240, 1000, 1400) if fixed else [40, 240, 1000, 1400]
+                if fixed:
+                    z = c.get("zoom", 1.2); bx, by, bw_, bh_ = c["box"]
+                    c["box"] = [round(bx - bw_ * (z - 1) / 2), round(by - bh_ * (z - 1) / 2), round(bw_ * z), round(bh_ * z)]
+            mid.append(f'<div id="{cid}d" style="position:absolute;inset:0;background:{_rgba(_DEEP, c.get("dim", 0.82))};opacity:0;visibility:hidden"></div>')
+            js.append(f'tl.fromTo("#{cid}d",{{autoAlpha:0}},{{autoAlpha:1,duration:0.3,ease:"power2.out"}},{q(a)});'
+                      f'tl.to("#{cid}d",{{autoAlpha:0,duration:0.3,ease:"power2.in"}},{q(b - 0.3)});')
+            quiet.append((a, b)); c.setdefault("tone", "clear")
         elif layout == "full":
             if not own_box and not c.get("box"): c["box"] = fit_into(60, 260, 960, 1240) if fixed else [60, 260, 960, 1240]
             elif not fixed and not own_box and c.get("box") == [0, 0, 1080, 1920]: pass
@@ -695,9 +926,12 @@ for i, c in enumerate(edit.get("cards", [])):
         sc = bw / nw
         if not re.search(r'data-width="(\d+)"', txt) and c.get("box"):   # size-free components fill whatever box they get:
             nw, nh, sc = bw, bh, 1.0                     # a wide band above the head or across the chest, not a square on the face
+            if c.get("place") == "low" and not own_box:   # their text is a share of the box (cq units): scale the whole band up from
+                sc = float(c.get("zoom", 1.9)); x, y = round(x - bw * (sc - 1) / 2), round(y - bh * (sc - 1) / 2)   # its centre (transparent, short text)
+                bw, bh = round(bw * sc), round(bh * sc)
         if c.get("scale"):                               # "scale": wide 16:9 overlays (lower thirds, handwriting) shown bigger than
             sc = float(c["scale"]); bw, bh = round(nw * sc), round(nh * sc)   # the 1080 frame; box x/y may go negative to crop
-        if y + bh * 0.7 > CAP_Y: quiet.append((a, b))   # motion sits over the caption zone: captions step aside
+        if y + bh * 0.7 > CAP_Y or c.get("place") == "low": quiet.append((a, b))   # motion sits over the caption zone: captions step aside
         vals = html.escape(json.dumps(vars_), quote=True)
         tone = TONES.get(c.get("tone", "dark"), TONES["dark"]) + "".join(f"{k}:{v};" for k, v in (c.get("css") or {}).items())
         if layout == "bubble":                           # a rounded window (or a circle) with clean edges
@@ -977,7 +1211,7 @@ def acc_look(col):
     return fill(col)
 cap_json = []
 for i, c in enumerate(edit.get("captions", [])):
-    if any(a - 0.05 <= c["start"] < b for a, b in quiet): continue
+    if any(a - 0.05 <= c["start"] < b or (c["start"] < b and c.get("end", c["start"]) > a + 0.2) for a, b in quiet): continue   # overlapping a card that carries its words
     ws = c["words"]
     plain = c.get("plain")                                             # "before" captions: basic white sans, no brand styling
     cap_json.append({"start": c["start"], "end": c["end"], "over_light": False,

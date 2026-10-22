@@ -49,6 +49,30 @@ h1{font-family:var(--f-display);font-size:44px;line-height:1;margin:0;color:var(
 .tab{font:inherit;font-weight:700;font-size:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer;display:flex;gap:7px;align-items:center}
 .tab[aria-selected="true"]{border-color:var(--pink);background:var(--pink);color:var(--on-accent)}
 .tab .dot{width:8px;height:8px;border-radius:50%;background:var(--keep)}
+.manlib summary{cursor:pointer;display:flex;gap:8px;align-items:baseline}
+.manlib h4{margin:14px 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.manrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line)}
+.manprev{width:72px;height:128px;border-radius:10px;object-fit:cover;flex:none;background:var(--surface);border:1px solid var(--line)}
+.manrow .nm{font:500 11px var(--f-mono);color:var(--muted)}
+.capgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:8px}
+.capopt{font:inherit;font-size:12px;text-align:left;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.capopt[aria-pressed=true]{border-color:var(--lime,#D2DB76)}
+.capopt video,.capopt .capnone{width:100%;aspect-ratio:9/16;border-radius:8px;object-fit:cover;background:#000;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
+.thumb.story{width:132px;cursor:zoom-in;box-shadow:0 0 0 1px var(--line)}
+.bigview{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px;cursor:zoom-out}
+.bigview img{max-height:92vh;max-width:100%;border-radius:14px}
+.hookopts{display:flex;gap:10px;margin:6px 0 10px;flex-wrap:wrap}
+.hookopt{font:inherit;font-size:12px;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;width:118px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.hookopt[aria-pressed=true]{border-color:var(--lime,#D2DB76)}
+.hookopt img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px}
+.pickgrid{margin-top:14px}
+.stpick{font:inherit;text-align:left;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:16px;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.stpick[aria-pressed=true]{border-color:var(--lime,#D2DB76)}
+.stpick video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;background:#000}
+.stpick b{font-size:14px}.stpick span{font-size:12px;color:var(--muted);line-height:1.35}
+.basket{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--surface);border:2px solid var(--lime,#D2DB76);font-size:13px}
+.menuopt{position:relative}.menuopt[aria-pressed=true]{border-color:var(--lime,#D2DB76)}
+.menuat{position:absolute;top:10px;right:10px;font:inherit;font-size:14px;line-height:1;border:0;border-radius:999px;padding:6px 7px;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
 .lede{margin:0 0 8px;color:var(--muted);font-size:14px;max-width:62ch}
 .tally{font:500 13px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:10px;display:flex;gap:6px 14px;flex-wrap:wrap}
 .tally b{color:var(--ink)}
@@ -78,7 +102,7 @@ textarea{min-height:80px;resize:vertical}
 .pz.kept{border-style:solid;border-color:var(--keep);color:var(--keep)}
 /* graphics */
 .cards{display:flex;flex-direction:column;gap:10px}
-.card{display:grid;grid-template-columns:90px minmax(0,1fr);gap:14px;padding:12px;border-radius:16px;background:var(--surface);border:2px solid var(--line)}
+.card{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;padding:12px;border-radius:16px;background:var(--surface);border:2px solid var(--line)}
 .card.now{border-color:var(--pink)}
 .card.dropped{opacity:.55}
 .thumb{position:relative;width:90px;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#222 center/cover}
@@ -540,6 +564,10 @@ section[data-p="effects"].with{margin-top:34px;padding-top:24px;border-top:1px s
       <div class="sechead"><h2>Ефекти, які <em>хочеш</em></h2><div class="sectools"><button class="icon notebtn" type="button">+ Нотатка</button></div></div>
       <p class="lede">Постав чорновий монтаж на потрібну секунду, опиши ефект або встав назву з бібліотеки. Якщо для ефекту потрібні фото, додай їх тут.</p>
       <p><a class="libbtn" id="eflib" href="https://hyperframes.heygen.com/catalog" target="_blank" rel="noopener">Відкрити бібліотеку ефектів ↗</a></p>
+      <div class="panel"><label for="refurl">Рілс-референс: «зроби як тут»</label>
+        <div class="ctl"><input type="text" id="refurl" placeholder="Посилання на рілс в Instagram або TikTok, монтаж якого подобається"><button class="b" id="refadd" type="button">Додати</button></div>
+        <p class="mode" style="margin:6px 0 0">Claude розбере прийоми (хук, субтитри, темп, графіку) і перенесе їх у твій рілс твоїми словами й кольорами.</p>
+        <div id="reflist"></div></div>
       <div class="panel" id="efbox">
         <label for="eftext">Ефект на <span class="tc" id="efat">0:00.0</span></label>
         <textarea id="eftext" placeholder="Напр.: count-up від 0 до 20 клієнтів, або: фото вилітають віялом з-за мене"></textarea>
@@ -549,6 +577,19 @@ section[data-p="effects"].with{margin-top:34px;padding-top:24px;border-top:1px s
         <div class="ctl" style="margin-top:10px"><button class="b primary" id="efadd" type="button">Додати ефект</button><span class="mode" id="efmsg" aria-live="polite"></span></div>
       </div>
       <div class="cards" id="eflist"></div>
+      <details class="panel manlib" id="stamplib" hidden open>
+        <summary><b>Мої марки</b> <span class="mode" id="stampcount"></span></summary>
+        <p class="lede">Ефекти з твоїх готових рілсів. Claude пропонує їх першими. Постав чорновий монтаж на потрібну секунду і натисни «На цю секунду».</p>
+        <div class="capgrid" id="stamplist"></div>
+      </details>
+      <details class="panel manlib" id="manlib" hidden open>
+        <summary><b>Меню ефектів</b> <span class="mode" id="mancount"></span></summary>
+        <p class="lede">Кожен ефект на тобі, у твоїх кольорах. Тицяй ті, що подобаються: вони збираються в «Мій вибір», і Claude поставить їх у рілс на фрази, яким вони пасують. Щоб поставити на конкретну секунду, натисни «⏱».</p>
+        <div class="gpre" id="menufilter" role="group" aria-label="Які ефекти показати"></div>
+        <input type="text" id="mansearch" placeholder="Пошук: цифра, список, чат, мапа, перехід…" aria-label="Пошук ефекту" style="margin-top:8px">
+        <div class="basket" id="basket" hidden></div>
+        <div id="manlist"></div>
+      </details>
     </section>
 
     <section data-p="graphics" hidden>
@@ -565,6 +606,7 @@ section[data-p="effects"].with{margin-top:34px;padding-top:24px;border-top:1px s
         <p class="mode" id="stylehint" style="margin-top:4px"></p>
         <label id="speedlabel">Швидкість руху графіки</label>
         <div class="gpre" id="speedpick" role="group" aria-labelledby="speedlabel"></div>
+        <div id="hookoptbox" hidden><label>Хук: обери варіант або напиши свій</label><div class="hookopts" id="hookopts"></div></div>
         <label for="hooktext">Хук: заголовок на початку</label>
         <input type="text" id="hooktext" placeholder="Напр.: Чому не / виходить / заробляти? (/ = новий рядок)">
         <details class="lookdet" id="hooklookdet"><summary>Вигляд хука: кольори рядків, контур, тінь, фон</summary><div id="hooklook"></div></details>
@@ -586,6 +628,9 @@ section[data-p="effects"].with{margin-top:34px;padding-top:24px;border-top:1px s
         <div class="fontpop" id="fontpop" hidden><input type="text" id="fontq" placeholder="Пошук шрифту" aria-label="Пошук шрифту"><div class="fontlist" id="fontlist"></div></div>
         <label class="gs capsize" style="margin-top:8px"><span class="gl">Розмір тексту</span><span class="gv" id="capszv"></span><input type="range" id="capsz" min="56" max="140" step="2" aria-label="Розмір субтитрів"></label>
         <p class="mode" style="margin:6px 0 0">Або перетягни субтитр на відео вгору чи вниз. Графіка сама відсунеться від обличчя й субтитрів.</p></div>
+      <details class="panel capstyles" id="capstylebox" hidden open><summary><b>Анімація субтитрів</b> <span class="mode" id="capstylecur"></span></summary>
+        <p class="lede">Стиль з бібліотеки ефектів: твої слова, таймінг, шрифт і кольори, а рух від стилю. На відео вище видно звичайні субтитри, обраний стиль з'явиться на чернетці.</p>
+        <div class="capgrid" id="capgrid"></div></details>
       <details class="panel lookdet" id="caplookdet" open><summary>Вигляд субтитрів: колір, контур, тінь, фон, акцент</summary><div id="caplook"></div></details>
       <div class="sr"><input type="text" id="srfind" placeholder="Знайти слово" aria-label="Знайти слово"><input type="text" id="srrepl" placeholder="Замінити на" aria-label="Замінити на"><button class="b" id="srgo" type="button">Замінити всюди</button><span class="mode" id="srmsg" aria-live="polite"></span></div>
       <div class="tally" id="captally"></div>
@@ -633,6 +678,7 @@ section[data-p="effects"].with{margin-top:34px;padding-top:24px;border-top:1px s
         <div class="gpre" id="stylepick1" role="group" aria-labelledby="stylepick1label"></div>
         <p class="mode" id="stylehint1" style="margin-top:8px"></p>
       </div>
+      <div class="stgrid pickgrid" id="stylegrid1"></div>
     </section>
 
     <section data-p="preview" hidden>
@@ -1255,9 +1301,15 @@ function cardList(box, list) {
     const st = (S.board[g.id] || {}).state || "k"; n[st]++;
     const el = document.createElement("div"); el.className = "card" + (st === "d" ? " dropped" : ""); el.dataset.id = g.id;
     const th = document.createElement("div");
-    const tb = document.createElement("div"); tb.className = "thumb"; if (g.thumbUrl) tb.style.backgroundImage = `url(${JSON.stringify(g.thumbUrl)})`;
-    tb.appendChild(box_(g)); const ap = document.createElement("div"); ap.className = "approx"; ap.textContent = "Приблизно";
-    th.append(tb, ap);
+    const tb = document.createElement("div"); tb.className = "thumb";
+    if (g.storyUrl && !g.placed) {   // storyboard: their frame with this very graphic on it (scripts/storyboard.py), tap to see it big
+      tb.classList.add("story"); tb.style.backgroundImage = `url(${JSON.stringify(g.storyUrl)})`; tb.title = "Так буде виглядати. Натисни, щоб збільшити";
+      tb.addEventListener("click", () => showBig(g.storyUrl, g.kind)); th.append(tb);
+    } else {
+      if (g.thumbUrl) tb.style.backgroundImage = `url(${JSON.stringify(g.thumbUrl)})`;
+      tb.appendChild(box_(g)); const ap = document.createElement("div"); ap.className = "approx"; ap.textContent = "Приблизно";
+      th.append(tb, ap);
+    }
     const body = document.createElement("div");
     const kind = document.createElement("div"); kind.className = "kind";
     const who = document.createElement("span"); who.className = "who" + (g.user || g.own ? " mine" : ""); who.textContent = g.user || g.own ? "твоє" : "від Claude";
@@ -1273,7 +1325,7 @@ function cardList(box, list) {
       const p = document.createElement("span"); p.textContent = placeText(g); meta.append(p);
       if (g.shifted) p.title = g.behind ? "Над головою, щоб було видно за тобою" : "Відсунуто, щоб не перекривати обличчя й субтитри";
       if (g.user && g.type !== "bigtext") { const fx = document.createElement("span"); fx.textContent = "ефект: " + ({ soft: "плавна поява", slide: "виліт збоку", polaroid: "полароїд", glass: "скло", zoom: "наближення" }[g.effect] || g.effect); meta.append(fx); }
-      if (g.user) {
+      if (g.user || ["title", "bigtext", "card", "tag", "cta"].includes(g.type)) {   // their overlays, and Claude's text cards (the hook first of all), can be dragged
         const mvb = document.createElement("button"); mvb.type = "button"; mvb.className = "b quiet"; const on = placing?.id === g.id;
         mvb.textContent = on ? "Готово" : "Перемістити"; mvb.title = "Перетягни рамку на відео, щоб змінити місце";
         mvb.addEventListener("click", () => { if (on) stopPlacing(); else { setPos(g.start + 0.3); startPlacing(g.place, g.id); } }); meta.append(mvb); }
@@ -1350,7 +1402,8 @@ function placeBox() {
     const mv = ev => { p[0] = Math.round(clamp(x0 + (ev.clientX - sx) * k, 0, 1080 - p[2])); p[1] = Math.round(clamp(y0 + (ev.clientY - sy) * k, 0, 1920 - p[3]));
                        el.style.left = p[0] / 10.8 + "%"; el.style.top = p[1] / 19.2 + "%"; };
     const up = () => { el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up);
-      if (placing?.id) { const id = placing.id, np = [...p]; mutate(() => { const o = (S.overlays || []).find(x => x.id === id); if (o) o.place = np; }); } };
+      if (placing?.id) { const id = placing.id, np = [...p]; mutate(() => { const o = (S.overlays || []).find(x => x.id === id);
+        if (o) o.place = np; else S.board = { ...S.board, [id]: { ...(S.board[id] || {}), place: np } }; }); } };
     el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
   });
   if (p[2] < 300 || p[3] < 160) el.style.fontSize = "0";   // a sticker-sized box: no label, just the picture and the corner
@@ -1407,6 +1460,121 @@ $("#ovadd").addEventListener("click", async () => {
   } catch (e) { msg.textContent = "Не вдалося завантажити (" + (e?.code || "помилка") + "). Спробуй ще раз або кинь файл у папку рілса."; }
   finally { btn.disabled = false; }
 });
+
+// ---------- storyboard: a big view of one frame, and the hook options as pictures (reel.json "hookOptions": [{text, img}]) ----------
+function showBig(url, label) {
+  const d = document.createElement("div"); d.className = "bigview"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", label || "Кадр");
+  const im = document.createElement("img"); im.src = url; im.alt = label || ""; d.appendChild(im);
+  const close = () => { d.remove(); document.removeEventListener("keydown", esc); }; const esc = e => { if (e.key === "Escape") close(); };
+  d.addEventListener("click", close); document.addEventListener("keydown", esc); document.body.appendChild(d);
+}
+function renderHookOpts() {
+  const all = ((R && R.hookOptions) || []).filter(o => o.text); $("#hookoptbox").hidden = !all.length; if (!all.length) return;
+  const box = $("#hookopts"), cur = ($("#hooktext").value || "").trim(); box.textContent = "";
+  all.forEach((o, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "hookopt"; b.setAttribute("aria-pressed", o.text.trim() === cur);
+    if (o.img) { const im = document.createElement("img"); im.src = o.img; im.alt = ""; im.loading = "lazy"; b.appendChild(im); }
+    const t = document.createElement("span"); t.textContent = String.fromCharCode(65 + i) + ": " + o.text.replace(/\s*\/\s*/g, " "); b.appendChild(t);
+    b.addEventListener("click", () => { $("#hooktext").value = o.text; mutate(() => { S.hook = o.text; }); });
+    box.appendChild(b);
+  });
+}
+
+// ---------- «Стиль монтажу» on step 1: every style as a looping example to pick by look (style/list + reel.json "stylePreviews") ----------
+function renderStyleGrid() {
+  const box = $("#stylegrid1"); if (!box || !R) return; box.textContent = "";
+  const SP = R.stylePreviews || {}, cur = S.style || "";
+  const opts = [...STYLE_LIST.map(x => ({ n: x.name, t: x.title || x.name, w: x.what || "", u: x.url, p: x.posterUrl })),
+    { n: "brand", t: "Тільки бренд", w: "Твої кольори й шрифти, фірмові картки й списки, спокійно й впізнавано.", u: SP.brand },
+    { n: "mix", t: "Без стилю: мікс ефектів", w: "Ефекти з усієї бібліотеки, щоразу інші: два рілси не схожі.", u: SP.mix }];
+  for (const o of opts) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "stpick"; b.setAttribute("aria-pressed", o.n === cur);
+    if (o.u) { const v = document.createElement("video"); v.muted = true; v.loop = true; v.playsInline = true; v.preload = "none"; if (o.p) v.poster = o.p;
+      v.dataset.src = o.u; manObs.observe(v); b.appendChild(v); }
+    const t = document.createElement("b"); t.textContent = o.t; const w = document.createElement("span"); w.textContent = o.w; b.append(t, w);
+    b.addEventListener("click", () => mutate(() => { S.style = o.n; }));
+    box.appendChild(b);
+  }
+}
+
+// ---------- reference reels by link (S.refs), import prints REFERENCE: <url> ----------
+function renderRefs() {
+  const box = $("#reflist"); if (!box) return; box.textContent = "";
+  for (const u of S.refs || []) {
+    const r = document.createElement("div"); r.className = "manrow"; const a = document.createElement("span"); a.textContent = u; a.style.wordBreak = "break-all";
+    const x = document.createElement("button"); x.type = "button"; x.className = "b quiet"; x.textContent = "Прибрати";
+    x.addEventListener("click", () => mutate(() => { S.refs = (S.refs || []).filter(v => v !== u); })); r.append(a, x); box.appendChild(r);
+  }
+}
+$("#refadd").addEventListener("click", () => { const u = $("#refurl").value.trim();
+  if (!/^https?:\/\/\S+$/.test(u)) { $("#refurl").focus(); return; }
+  mutate(() => { S.refs = [...new Set([...(S.refs || []), u])]; }); $("#refurl").value = ""; });
+
+// ---------- «Мої марки»: graphics their finished reels kept (reel.json "stamps": [{key, ua, uses, img}]) ----------
+function renderStamps() {
+  const all = (R && R.stamps) || []; $("#stamplib").hidden = !all.length; if (!all.length) return;
+  $("#stampcount").textContent = all.length; const box = $("#stamplist"); box.textContent = "";
+  for (const m of all) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "capopt"; b.title = "На цю секунду";
+    if (m.img) { const im = document.createElement("img"); im.src = m.img; im.alt = ""; im.loading = "lazy"; im.style.cssText = "width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:8px"; b.appendChild(im); }
+    const t = document.createElement("span"); t.textContent = m.ua + (m.uses > 1 ? ` · ×${m.uses}` : ""); b.appendChild(t);
+    b.addEventListener("click", () => { $("#eftext").value = `моя марка ${m.key}: ${m.ua}. `; $("#efbox").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("#eftext").focus(); $("#efmsg").textContent = "Допиши свої слова для ефекту, перевір секунду і натисни «Додати ефект»."; });
+    box.appendChild(b);
+  }
+}
+
+// ---------- «Анімація субтитрів»: a caption style from the catalog (reel.json "capStyles"), saved as S.capStyle -> edit.json "caption_style" ----------
+function renderCapStyles() {
+  const box = $("#capgrid"), all = (R && R.capStyles) || []; $("#capstylebox").hidden = !all.length; if (!all.length) return;
+  const cur = S.capStyle || ""; box.textContent = "";
+  const pick = all.find(x => x.n === cur); $("#capstylecur").textContent = pick ? "· " + pick.ua : "· мої субтитри";
+  for (const m of [{ n: "", ua: "Мої субтитри (бренд)" }, ...all]) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "capopt"; b.setAttribute("aria-pressed", m.n === cur);
+    if (m.p) { const v = document.createElement("video"); v.muted = true; v.loop = true; v.playsInline = true; v.preload = "none"; v.dataset.src = m.p; manObs.observe(v); b.appendChild(v); }
+    else { const d = document.createElement("div"); d.className = "capnone"; d.textContent = m.n ? "без прев'ю" : "як у бренді"; b.appendChild(d); }
+    const t = document.createElement("span"); t.textContent = m.ua; b.appendChild(t);
+    b.addEventListener("click", () => mutate(() => { if (m.n) S.capStyle = m.n; else delete S.capStyle; }));
+    box.appendChild(b);
+  }
+}
+
+// ---------- «Тільки вручну»: catalog effects Claude never suggests on its own (reel.json "manual"), one tap puts one on this second ----------
+const manObs = new IntersectionObserver(es => { for (const e of es) { const v = e.target;   // previews load and play only while on screen
+  if (e.isIntersecting) { if (!v.src) v.src = v.dataset.src; v.play().catch(() => {}); } else v.pause(); } }, { rootMargin: "200px" });
+let MENU_F = "all";
+function renderManual() {
+  const box = $("#manlist"), all = (R && R.manual) || []; $("#manlib").hidden = !all.length; if (!all.length) return;
+  const fb = $("#menufilter"); fb.textContent = "";
+  for (const [k, t] of [["all", "Усі"], ["a", "Claude пропонує"], ["m", "Тільки вручну"], ["mine", "Мій вибір"]]) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", MENU_F === k);
+    b.addEventListener("click", () => { MENU_F = k; renderManual(); }); fb.appendChild(b); }
+  const picks = new Set(S.picks || []), q = ($("#mansearch").value || "").trim().toLowerCase();
+  const list = all.filter(m => (MENU_F === "all" || (MENU_F === "mine" ? picks.has(m.n) : (m.k || "m") === MENU_F))
+                              && (!q || (m.ua + " " + m.n + " " + m.g).toLowerCase().includes(q)));
+  $("#mancount").textContent = list.length === all.length ? `${all.length}` : `${list.length} з ${all.length}`;
+  const bk = $("#basket"); bk.hidden = !picks.size; bk.textContent = "";
+  if (picks.size) { const t = document.createElement("span"); t.innerHTML = `<b>Мій вибір: ${picks.size}</b> · Claude поставить їх у рілс, коли натиснеш велику кнопку внизу`;
+    const c = document.createElement("button"); c.type = "button"; c.className = "b quiet"; c.textContent = "Очистити";
+    c.addEventListener("click", () => mutate(() => { delete S.picks; })); bk.append(t, c); }
+  box.textContent = ""; let g = null, grid = null;
+  for (const m of list) {
+    if (m.g !== g) { g = m.g; const h = document.createElement("h4"); h.textContent = g; grid = document.createElement("div"); grid.className = "capgrid"; box.append(h, grid); }
+    const card = document.createElement("div"); card.className = "capopt menuopt"; card.setAttribute("role", "button"); card.tabIndex = 0;
+    card.setAttribute("aria-pressed", picks.has(m.n)); card.title = picks.has(m.n) ? "Прибрати з мого вибору" : "Додати в мій вибір";
+    if (m.p) { const v = document.createElement("video"); v.muted = true; v.loop = true; v.playsInline = true; v.preload = "none"; v.dataset.src = m.p; manObs.observe(v); card.appendChild(v); }
+    else { const d = document.createElement("div"); d.className = "capnone"; d.textContent = "прев'ю ще готується"; card.appendChild(d); }
+    const t = document.createElement("span"); t.textContent = (picks.has(m.n) ? "✓ " : "") + m.ua; card.appendChild(t);
+    const at = document.createElement("button"); at.type = "button"; at.className = "menuat"; at.textContent = "⏱"; at.title = "На цю секунду";
+    at.addEventListener("click", e => { e.stopPropagation(); $("#eftext").value = `${m.n}: ${m.ua}. `; $("#efbox").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("#eftext").focus(); $("#efmsg").textContent = "Допиши свої слова для ефекту, перевір секунду і натисни «Додати ефект»."; });
+    card.appendChild(at);
+    const tog = () => mutate(() => { const p = new Set(S.picks || []); p.has(m.n) ? p.delete(m.n) : p.add(m.n); S.picks = [...p]; if (!S.picks.length) delete S.picks; });
+    card.addEventListener("click", tog); card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } });
+    grid.appendChild(card);
+  }
+}
+$("#mansearch").addEventListener("input", renderManual);
 
 // ---------- effects they ask for: a moment, what to do (a library name or their words) and files for it ----------
 function renderEffects() {
@@ -1475,7 +1643,7 @@ function renderStylePick() {
   }
   const pick = STYLE_LIST.find(x => x.name === cur);
   const go = document.createElement("button"); go.type = "button"; go.className = "b quiet"; go.textContent = "Зібрати стилі"; go.addEventListener("click", () => showTab("style"));
-  $("#stylehint").textContent = (!STYLE_LIST.length ? "Стилів ще немає. Збери їх на вкладці «Стиль» або монтуй тільки з брендом." : cur === "brand" ? "Монтаж у кольорах і шрифтах бренду, без стилю: картки й списки бренду плюс кілька ефектів з бібліотеки." : cur === "mix" ? "Без стилю: Claude бере ефекти з усієї бібліотеки (86 анімацій), щоразу інші, ніколи не повторює в одному рілсі. Кольори й шрифти бренду." : pick ? pick.what : "Обери стиль до «Готово → Claude»: пропозиції графіки й звуки будуть у ньому.") + " ";
+  $("#stylehint").textContent = (!STYLE_LIST.length ? "Стилів ще немає. Збери їх на вкладці «Стиль» або монтуй тільки з брендом." : cur === "brand" ? "Монтаж у кольорах і шрифтах бренду, без стилю: картки й списки бренду плюс кілька ефектів з бібліотеки." : cur === "mix" ? `Без стилю: Claude бере ефекти з бібліотеки (${R && R.libCount ? R.libCount : "понад 100"} анімацій, перевірених у вертикальному відео), щоразу інші, ніколи не повторює в одному рілсі. Кольори й шрифти бренду.` : pick ? pick.what : "Обери стиль до «Готово → Claude»: пропозиції графіки й звуки будуть у ньому.") + " ";
   if (STYLE_LIST.length) go.textContent = "Подивитись приклади стилів";
   $("#stylehint").appendChild(go);
   const box1 = $("#stylepick1"); if (!box1) return; box1.textContent = "";   // the same picker on step 1 («Стиль монтажу» tab)
@@ -1787,6 +1955,7 @@ function stage() {
   if (B?.final) return { n: 4, wait: false };
   if (B?.url && S.finalRequest?.hash === B.hash) return { n: 4, wait: true };
   if (B?.url && S.fixRequest?.hash === B.hash && B.fixedFor !== S.fixRequest.at) return { n: 3, wait: true };   // notes sent: waiting for the draft that answers them (builds doc carries fixedFor)
+  if (B?.url && S.buildRequest && S.buildRequest.hash !== B.hash && S.buildRequest.hash === ReelCore.hash(decisions())) return { n: 3, wait: true };   // asked to rebuild after a change
   if (B?.url) return { n: 3, wait: false };
   if (S.buildRequest) return { n: 3, wait: true };
   if ((R?.claudeRound || 0) > 0) return { n: 2, wait: false };
@@ -1833,6 +2002,7 @@ function renderStage() {
   else if (st.n === 2 && st.wait) set("Claude готує пропозиції", "Сторінка оновиться сама. Можеш далі правити своє.", `<span class="spin"></span>Claude працює`);
   else if (st.n === 2) set("Крок 2 · пропозиції Claude", "На «Графіці» все з позначкою «від Claude»: залиш, зміни або прибери.", "Зібрати чернетку", "build");
   else if (st.n === 3 && st.wait) { const r = renderEta(); set("Claude збирає чернетку", r ? `Минуло ${r.done} хв з ~${r.total}. Сторінка відкриє «Чернетку» сама.` : "~6–10 хв. Сторінка відкриє «Чернетку» сама.", `<span class="spin"></span>${r ? r.pct + "%" : "Рендериться"}`); }
+  else if (st.n === 3 && B?.url && B.hash !== ReelCore.hash(decisions())) set("Крок 3 · рішення змінились", "Чернетка зібрана до твоїх змін (стиль, нарізка, графіка). Збери її заново.", "Зібрати чернетку заново", "build");
   else if (st.n === 3 && newRevs) set("Крок 3 · чернетка", `Нотаток: ${newRevs}. Віддай їх Claude одним натиском.`, "Виправити за нотатками", "fixes");
   else if (st.n === 3) set("Крок 3 · чернетка", "Подивись чернетку. Є що змінити? Лиши нотатку на секунді.", "Це фінал", "final");
   else if (st.wait) set("Claude видає фінал", "Перевірка звуку, MP4 у папку Reels.", `<span class="spin"></span>Готується`);
@@ -1903,7 +2073,7 @@ $("#revadd").addEventListener("click", () => {
 });
 
 function renderAll() {
-  renderCuts(); renderGraphics(); renderEffects(); renderCaptions(); renderSound(); renderPreview(); syncHookCta(); renderStage(); renderCapPlace(); renderStylePick(); renderCutBox();
+  renderCuts(); renderGraphics(); renderEffects(); renderManual(); renderCapStyles(); renderCaptions(); renderSound(); renderPreview(); syncHookCta(); renderHookOpts(); renderStyleGrid(); renderRefs(); renderStamps(); renderStage(); renderCapPlace(); renderStylePick(); renderCutBox();
   const sent = { mystyle: !!S.style, cuts: S.cut != null, overlays: (S.overlays || []).length, effects: (S.effects || []).length, graphics: Object.keys(S.board).length || (S.hook != null) || !!S.cta || !!S.style || !!S.speedMul, captions: S.captions != null, sound: Object.keys(S.sfxOff).length || S.voiceClean === false || !ReelCore.isNeutral(S.grade) };
   $$(".tab:not(.tabx)").forEach(b => { const d = b.querySelector(".dot"); if (d) d.hidden = !sent[b.dataset.tab]; });
   styleDot();

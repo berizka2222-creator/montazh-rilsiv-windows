@@ -21,15 +21,15 @@ with what each one is for, its moment and its tested placement, is `references/m
 
 ## Vertical frame and Ukrainian text (checked 2026-10-21 on all 86, big-face framing)
 
-- Catalog text sizes follow the height of the box they get (`cqh`). A band above the head or on the chest thinner than
-  380 px (a big face leaves no more) makes them unreadable, so build_reel turns such a `front` / `bubble` / `behind` motion into a
-  `split` panel by itself (`"keep_band": true` keeps the band). Size-free motions get a 1080-tall panel, 16:9 ones are blown up
-  1.25x to fill theirs.
+- A catalog motion never moves or crops the person to make room: it plays over the video in a free area (chest, low third,
+  above the head). Split and full-screen layouts only when the person picked them.
 - Keep every text field short: 2-4 words, about 18 characters a line. Ukrainian words are longer than the English defaults and
   one-line effects clip or run off the frame past that.
-- `status: "manual"` (26 motions: charts, node maps, card grids, chat bubbles, notifications, a few one-line text effects): drawn for
-  16:9 and still small on a phone. `ideas` and `menu` leave them out of the suggestions (menu lists them at the end); use one only
-  when the person asks for it.
+- Statuses: `ready` / `replace` = checked in the frame, suggested by `menu` / `ideas`; `full_only` = only as a whole-frame takeover
+  (2-3 s), suggested marked «на весь кадр», at most one per phrase and below the overlays; `manual` = works but small or niche, only
+  when the person asks (menu lists it at the end); `candidate` = not checked in the frame yet, never suggested; `skip` = don't use.
+  Elements from an own Remotion library (~/motion, `brand:<Element>`) are suggested next to the catalog like `ready` ones.
+  `hyperframes snapshot` shows transparent WebM overlays as black: check them with a short real render (`REEL_DRAFT=1 render.sh`).
 
 ## The card
 
@@ -46,6 +46,21 @@ with what each one is for, its moment and its tested placement, is `references/m
   - `bubble`: a rounded brand window in that band, `"shape": "circle"` for a circle;
   - `split`: the screen divides, the motion on a brand panel at the top, the person slides into the lower part (`"panel": 820` = its height);
   - `full`: the whole frame is the motion on the brand colour for its seconds (phones, CTA end screens).
+  - `low`: transparent, over the video from the chin down, text inks made light (most text effects);
+  - `dim`: the video stays as a darkened background (`"dim": 0.82` = how dark), the effect on top over the whole frame;
+    captions step aside. For effects that can't keep off the face: charts, carousels and galleries with their photos,
+    phone chats and notes, maps, before/after, device mocks. Status `full_only`, marked «на весь кадр».
+- Image slots (carousels, galleries, device and placeholder grids): fill `"images"` with their photos or screenshots; an
+  empty slot never goes in.
+- Follow cards (`instagram-follow`, `tiktok-follow`, `yt-lower-third`, `x-post`) are suggested. Name and handle come from
+  brand.json `name` / `handle` (stage 1 files already give them); the person can change them for one reel (card `replace`,
+  e.g. `{"HeyGen": "Інна"}`) or for good (brand.json). The buttons stay in English, as in the real apps. The photo is
+  brand.json `"avatar"`: the first time a follow card is planned and there is none, ask «Дай фото для картки підписки
+  (як на аватарці)», save it to `<REELS_HOME>/assets/avatar.jpg` and set `"avatar": "avatar.jpg"`. Never crop it from the
+  reel or leave the example logo: until the photo comes, the slot shows their initial on the brand colour. A follower count
+  shows only if `replace` gives a real one.
+- Effects that work but are never suggested on their own (`manual`: maps, shader transitions, caption styles, 3D scenes) are
+  listed on the review page under «Ефекти» → «Тільки вручну»; the person picks one for a second there.
 - The tested placement comes from the catalog automatically (layout, place, tone, ink, css); set them on the card only to move it.
   `box: [x, y, w, h]` on the 1080x1920 frame; `scale` shows a 1920-wide overlay bigger than the frame (lower thirds, light
   leaks: x may go negative).
@@ -55,9 +70,63 @@ with what each one is for, its moment and its tested placement, is `references/m
   catalog lists the strings; build_reel warns when one isn't found.
 - Fonts: every catalog motion is drawn in the brand fonts (body weight for regular text, head for bold), whatever the motion
   ships with. `"keep_fonts": true` keeps its own (rarely: a terminal's monospace).
-- `full` and `split` motions take over the frame for their seconds: keep them 2-4 s, at most two `full` per reel. Light
-  leaks and the flash (`layout: "transition"`) are see-through and go between two thoughts.
+- `full` and `split` motions take over the frame for their seconds: keep them 2-4 s, at most two `full` per reel.
+- **Shader transitions on a cut** (`layout: "transition"`, moment «перехід»). Ready: cross-warp-morph, sdf-iris, swirl-vortex,
+  ripple-waves, light-leak, glitch, whip-pan, cinematic-zoom, flash-through-white, chromatic-radial-split, thermal-distortion.
+  Manual: domain-warp-dissolve (neon pink/cyan edge baked into the shader), gravitational-lens (a black hole over the face),
+  ridged-burn (fire edge). Card: `{"type": "motion", "name": "sdf-iris", "start": <the join>}`; no `end`.
+  build_reel snaps `start` to the nearest join of edl.json (within 1.5 s; `"join": 24.92` to name it exactly), takes the frame of
+  master.mp4 at join-0.19 s and at join+0.19 s, embeds them in the shader as its two scenes and plays the warp over those ~0.38 s
+  with a snappy cubic ease (`"half"` changes it, default 0.19). The shader starts on the live picture and lands on the live
+  picture, so neither side jumps. Captions stay on top; the whoosh is quiet (whoosh_soft at -24 dB, under the voice).
+  **They are loud effects: at most 2 per reel, only where the topic changes (a new thought or section), never on neighbouring
+  joins, at least 12 s apart.** build_reel warns (`variety:`) when a reel has more or they sit closer. Check them with a short draft render (`REEL_DRAFT=1 render.sh`),
+  not `hyperframes snapshot`.
 - Carousels take `"images": [..]`, every slot is filled for you.
+
+## Transparent motion elements (WebM with alpha, ProRes 4444)
+
+A second source of motions besides the catalog: an element rendered with a transparent background in any tool (Remotion,
+After Effects, Jitter...). Remotion: `npx remotion render <Element> out.webm --codec=vp9 --pixel-format=yuva420p --image-format=png`.
+
+```json
+{"type": "overlay", "src": "overlays/roi.webm", "start": 12.4, "end": 15.0}
+```
+- build_reel detects the alpha channel: full frame, no border, no extra entrance or sfx (the element animates itself), captions
+  step aside for its seconds (`"captions": true` keeps them). A `box` on the card places a smaller one (and gets the safe-zone check).
+- Render it with the element above the head or on the chest (`face.json` says where the face is), full screen only as a takeover.
+  Never half over the face.
+- Their words in every text, numbers exactly as said. Counts toward the reel's motion number and the «never twice» rule;
+  `motions.py log` sees it only with `"brand"` set (below).
+- Own Remotion library: with `~/motion/library.json` (or `$MOTION_HOME/library.json`: `{"elements": [{"element", "ua",
+  "moments", "text_vars"}]}`), `motions.py menu` / `ideas` offer its elements next to the catalog as `brand:<Element>`.
+  Name the file `overlays/brand-<Element>-<slug>.webm` and set `"brand": "<Element>"` on the card so `ideas` and `log` count it.
+
+## Caption styles (status `caption`)
+
+11 catalog styles can draw all the captions instead of the brand's own: highlight, pill-karaoke, neon-accent, neon-glow,
+gradient-fill, glitch-rgb, matrix-decode, particle-burst, emoji-pop, clip-wipe, weight-shift. The person picks one on the
+review page («Субтитри» → «Анімація субтитрів», with a preview of each); `review_sync.py import` writes edit.json
+`"caption_style": "<name>"` (prints `CAPTION STYLE:`). build_reel feeds it their words and timing, the caption groups and
+accent words, the brand fonts and colours, at the brand caption height (`"cap_at"` in the catalog = where the style's line
+sits in its 1920x1080 frame). brand.json `captions.anim` makes one the default for every reel. The page shows the brand
+captions while reviewing; the style appears on the draft. editorial-emphasis, texture and blend-difference stay manual: they
+show no text with fed-in words on this HyperFrames version.
+
+## «Мої марки» (stamps)
+
+After each final, `motions.py stamp <reel>` collects every graphic the reel kept (catalog motion, brand element, template
+card, camera move) into `<REELS_HOME>/stamps.json`: key, Ukrainian name, moments, the settings that worked (`spec`), which
+reels used it and a still. `ideas` offers up to two stamps per phrase before the catalog (★ моя марка), `menu` lists them.
+The review page shows them under «Ефекти» → «Мої марки». Reuse a stamp's `spec` as the card's settings, with new words.
+
+## Re-testing the library (after a HyperFrames update or for new items)
+
+`python3 scripts/test_motions.py <any cut reel> <out dir> --status candidate` (or `--names a,b`, or `--status manual`)
+renders every motion alone on that reel with Ukrainian sample text and prints an index; look through
+`<out>/sheet_*.jpg` and the LEAK flags (something visible before the motion starts). Write the verdicts into
+`references/motion_catalog.json` (status, card placement, replace, note). `--previews` makes the 3 s clips for the
+review page's «Тільки вручну» list. Two workers at most on an 8 GB Mac; the run resumes where it stopped.
 
 ## Adding more from the catalog (447 items)
 
