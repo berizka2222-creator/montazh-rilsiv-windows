@@ -80,6 +80,32 @@ PATCHES = [
     ("references/setup-interview.md", '"deliver_dir": "~/Movies/Reels"', '"deliver_dir": "~/Videos/Reels"'),
     ("references/setup-interview.md", "and a recent Mac", "and a recent computer"),
     ("references/motions.md", "slow on an 8 GB Mac", "slow on an 8 GB computer"),
+    # ---- reference reel (yt-dlp): Chrome / Edge / Firefox logins instead of Safari; yt-dlp from pip when it isn't installed ----
+    ("scripts/reference.py", "person uses (Chrome, then Safari: `--cookies-from-browser`; macOS may ask once for the Mac password to read Chrome's\n"
+                             "   login, «Дозволити завжди»). It only reads the post.",
+                             "person uses (Chrome, then Edge, then Firefox: `--cookies-from-browser`; Chrome and Edge keep the login file locked\n"
+                             "   while they are open, so if those fail ask them to close the browser for a moment, or use Firefox). It only reads the post."),
+    ("scripts/reference.py", "SK = Path(__file__).resolve().parent.parent\n",
+                             "SK = Path(__file__).resolve().parent.parent\n"
+                             "if not shutil.which(\"yt-dlp\") and subprocess.run([sys.executable, \"-c\", \"import yt_dlp\"], capture_output=True).returncode:\n"
+                             "    print(\"one-time: installing yt-dlp (pip)\", flush=True)   # Windows has no yt-dlp by default\n"
+                             "    subprocess.run([sys.executable, \"-m\", \"pip\", \"install\", \"-q\", \"--user\", \"-U\", \"yt-dlp\"])\n"
+                             "YTDLP = [\"yt-dlp\"] if shutil.which(\"yt-dlp\") else [sys.executable, \"-m\", \"yt_dlp\"]\n"),
+    ("scripts/reference.py", "    try:   # with a browser login macOS may wait for the Mac password in a dialog: give them two minutes, never hang\n"
+                             "        r = subprocess.run([\"yt-dlp\", ", "    try:   # never hang on a browser login: two minutes at most\n        r = subprocess.run([*YTDLP, "),
+    ("scripts/reference.py", "timed out waiting (the Mac password dialog for the browser login was not answered)", "timed out waiting for the download"),
+    ("scripts/reference.py", 'for browser in ("chrome", "safari"):', 'for browser in ("chrome", "edge", "firefox"):'),
+    ("references/reference.md", "the Chrome, then the Safari login (macOS asks once for the Mac password: «Дозволити завжди»; it only reads the post).",
+                                "the Chrome, then the Edge, then the Firefox login (it only reads the post; Chrome and Edge must be closed for a moment\n"
+                                "   if their login can't be read). No yt-dlp on the computer: the script installs it with pip once."),
+    ("references/style-lab.md", "`--cookies-from-browser safari`", "`--cookies-from-browser chrome` (or `edge`, `firefox`; close the browser first)"),
+    # ---- the Remotion motion library (~/motion): .sh scripts run with bash, deliveries go to Videos ----
+    ("scripts/setup_motion.sh", "\nscripts/render-overlay.sh Counter", "\nbash scripts/render-overlay.sh Counter"),
+    ("scripts/motions.py", "Remotion-елемент: ~/motion/scripts/render-overlay.sh", "Remotion-елемент: bash ~/motion/scripts/render-overlay.sh"),
+    ("motion/skill/SKILL.md", "4. Deliver to `~/Movies/Reels`", "4. Deliver to `~/Videos/Reels`"),
+    ("motion/skill/SKILL.md", "`REELS_HOME` is set.\n", "`REELS_HOME` is set.\n"
+                              "**Windows:** run every `scripts/*.sh` here with `bash` (`bash scripts/render-overlay.sh ...`), and `python`, not `python3`\n"
+                              "(the scripts find the right Python themselves).\n"),
 ]
 
 WIN_RULES = """## This is the Windows version
@@ -100,6 +126,7 @@ The person works in the Claude desktop app, Code tab. Never ask them to open Pow
    If `winget` itself is missing (old Windows 10), say so plainly and send them to the Microsoft Store page «App Installer» to update it, then continue.
 5. `npx skills add heygen-com/hyperframes -g -y` if the HyperFrames skills are missing (`-g`: into the user folder, whatever folder the shell is in).
 6. `bash scripts/setup_engine.sh` (animation library + sound effects).
+6a. `bash scripts/setup_motion.sh` (the Remotion motion library in their brand: `~/motion` + the `motion-brand` skill, ~1 GB, a few minutes; it renders one test element). Run it again after the brand file exists (step «Before anything else»), so colours and fonts come from their brand: every render re-reads `brand.json` anyway.
 7. Speech recognition: connect ElevenLabs Scribe (section «Connecting ElevenLabs Scribe» below). It is required: there is no local recogniser, so nothing large is downloaded. Walk them through creating the key in one short step at a time.
 8. `mkdir -p ~/reels/fonts ~/reels/assets` (the reels workspace).
 9. `bash scripts/doctor.sh` (it also installs font measuring and face finding into `~/reels/.venv`). If it's READY, tell them in one sentence that everything is ready, that it's worth closing and reopening the Claude app once (so the new programs are found), and that next time they open the Code tab with the folder `reels` and write «змонтуй рілс».
@@ -136,6 +163,18 @@ def sh_layer(p):
     p.write_text(t, encoding="utf-8")
 
 
+MOTION_SH = ("# Windows: python3 is often a Microsoft Store stub; use the first Python that really runs, in UTF-8 mode\n"
+             'for _c in python py python3; do command -v "$_c" >/dev/null 2>&1 && "$_c" -c "import sys" >/dev/null 2>&1 && { PY="$_c"; break; }; done\n'
+             'python3() { command "${PY:-python}" "$@"; }; export PYTHONUTF8=1 PYTHONIOENCODING=utf-8\n')
+
+
+def motion_sh_layer(p):
+    t = p.read_text(encoding="utf-8")
+    m = re.search(r"^set -[a-z]+.*\n", t, re.M)
+    if not m: sys.exit(f"PORT STOPPED: no `set -e` line in {p.relative_to(OUT)}")
+    p.write_text(t[:m.end()] + MOTION_SH + t[m.end():], encoding="utf-8")
+
+
 def swap(rel, old, new):
     p = OUT / rel
     t = p.read_text(encoding="utf-8")
@@ -156,12 +195,18 @@ def main():
     sk.write_text(t, encoding="utf-8")
     for p in sorted((OUT / "scripts").glob("*.py")): py_layer(p)
     for p in sorted((OUT / "scripts").glob("*.sh")): sh_layer(p)
+    for p in sorted((OUT / "motion" / "scripts").glob("*.sh")): motion_sh_layer(p)
     for f in OVERLAY.rglob("*"):
         if f.is_file(): d = OUT / f.relative_to(OVERLAY); d.parent.mkdir(parents=True, exist_ok=True); shutil.copy(f, d)
     # nothing Mac-only may remain in the scripts
     left = [f"{p.relative_to(OUT)}: {w}" for p in (OUT / "scripts").iterdir() if p.suffix in (".py", ".sh") and not (OVERLAY / "scripts" / p.name).exists()
             for w in ("osascript", "sysctl", "swift", "/Applications/", "~/Movies", "h264_videotoolbox") if w in p.read_text(encoding="utf-8")
             and not (w == "h264_videotoolbox" and 'sys.platform == "darwin"' in p.read_text(encoding="utf-8"))]
+    left += [f"{p.relative_to(OUT)}: {w}" for p in [*(OUT / "motion" / "scripts").iterdir(), *(OUT / "scripts").glob("*.py")]
+             if p.suffix in (".py", ".sh") for w in ("osascript", "sysctl", "swift", "/Applications/", "safari", "Safari") if w in p.read_text(encoding="utf-8")
+             and not (p.name == "face_box_cv.py")]
+    left += [f"{p.relative_to(OUT)}: {w}" for p in OUT.rglob("*.md") for w in ("~/Movies", "cookies-from-browser safari", "Safari login")
+             if w in p.read_text(encoding="utf-8")]
     if left: sys.exit("PORT STOPPED: Mac-only calls left:\n  " + "\n  ".join(left))
     print(f"Windows skill built in {OUT} from {SRC}")
 
