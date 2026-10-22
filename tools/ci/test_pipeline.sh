@@ -80,7 +80,7 @@ import json, sys; from pathlib import Path
 r = Path(sys.argv[1]); e = json.load(open(r / "edit.json", encoding="utf-8")); w = json.load(open(r / "master_transcript.json", encoding="utf-8"))
 def at(word, k=0):
     hits = [x for x in w if word in x["text"].lower()]
-    return hits[k] if hits else w[min(len(w) - 1, 3)]
+    return hits[min(k, len(hits) - 1)] if hits else w[min(len(w) - 1, 3)]
 end = w[-1]["end"]
 for c in e["captions"]:
     for x in c.get("words", []):
@@ -94,9 +94,16 @@ e["cards"] += [
   {"type": "camera", "move": "whip", "start": at("підписуйся")["start"], "end": at("підписуйся")["start"] + 0.8, "id": "whip"},
   {"type": "cta", "text": "підписуйся", "start": at("підписуйся")["start"], "end": end, "id": "cta"},
 ]
+if (r / "overlays/brand-Counter-test.webm").exists():   # a transparent Remotion element from the motion library (setup_motion.sh)
+    a = at("клієнтів", 1)["start"]
+    e["cards"].append({"type": "overlay", "brand": "Counter", "src": "overlays/brand-Counter-test.webm", "start": a, "end": a + 2.0, "id": "remotion"})
 json.dump(e, open(r / "edit.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print(len(e["cards"]), "cards,", len(e["captions"]), "captions")
 PY
+}
+remotion_overlay() {   # the motion library (~/motion) renders a transparent VP9 element for the reel
+  bash "${MOTION_HOME:-$HOME/motion}/scripts/render-overlay.sh" Counter '{"value":20,"suffix":"$","label":"за день","duration":2,"place":"top"}' \
+    "$REEL/overlays/brand-Counter-test.webm" && ffprobe -v error -show_entries stream=codec_name:stream_tags=alpha_mode -of compact "$REEL/overlays/brand-Counter-test.webm"
 }
 frames() {   # stills from the draft for the report: the hook, the list, the motions, the text behind
   for t in 1.5 3 6 9 12 15; do ffmpeg -v error -y -ss "$t" -i "$REEL/draft.mp4" -frames:v 1 "$OUTD/frame_$t.jpg"; done
@@ -120,6 +127,7 @@ step "test brand + fonts"            fonts
 step "test clip (face photo + speech)" clip
 step "doctor.sh"                     bash "$S/doctor.sh"
 step "setup_engine.sh (86 motions)"  bash "$S/setup_engine.sh"
+step "setup_motion.sh (Remotion)"    bash "$S/setup_motion.sh"
 mock_scribe
 step "transcribe raw"                transcript "$(wp "$REEL/raw.mp4")" "$(wp "$REEL/transcript.json")" raw
 step "clean_audio.sh"                bash "$S/clean_audio.sh" "$REEL/raw.mp4" "$REEL/voice.wav"
@@ -131,9 +139,11 @@ step "snap_joins.py"                 py "$S/snap_joins.py" "$(wp "$REEL")"
 step "cut.py (preview)"              env REEL_PREVIEW=1 python3 "$S/cut.py" "$(wp "$REEL")"
 step "transcribe master"             transcript "$(wp "$REEL/master.mp4")" "$(wp "$REEL/master_transcript.json")" master
 step "auto_edit.py"                  py "$S/auto_edit.py" "$(wp "$REEL")"
+step "Remotion overlay element"      remotion_overlay
 step "graphics cards"                cards
 step "motions.py ideas"              py "$S/motions.py" ideas "$(wp "$REEL")"
 step "precheck.py"                   py "$S/precheck.py" "$(wp "$REEL")"
+step "test_motions.py (2 motions)"   py "$S/test_motions.py" "$(wp "$REEL")" "$(wp "$OUTD/motions")" --names count-up,per-word-rise --workers 1
 step "render draft (incl. cut-out behind)" env REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$REEL"
 qa_draft() {   # the draft is 540x960 on purpose, so the size check is the one FAIL allowed here
   local o; o="$(REEL_PREVIEW=1 python3 "$S/qa.py" "$(wp "$REEL")" draft.mp4 2>&1)"; echo "$o"
