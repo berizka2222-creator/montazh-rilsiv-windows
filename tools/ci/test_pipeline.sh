@@ -155,6 +155,74 @@ step "frames from draft"             frames
 step "render_queue (locks)"          queue
 step "deliver.sh"                    bash "$S/deliver.sh" "$REEL/draft.mp4" "Тест рілс"
 step "motions.py log"                py "$S/motions.py" log "$(wp "$REEL")"
+
+# ---- «подачі голови» (scripts/heads.py): a second reel made of the same cut, its video shrinks into shapes on brand colours ----
+HREEL="$REELS_HOME/2026-10-20-подачі голови"
+heads_links() {   # the scripts link files with os.symlink, which needs admin rights on a student's PC: _win.py makes a hard link
+  py - "$(wp "$S")" "$(wp "$REEL")" "$(wp "$HREEL")" <<'PY'   # (file) or a junction (folder) instead, never a real symlink
+import os, sys; from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+try: import _win  # noqa: F401  the same layer every script imports (Windows version only)
+except ImportError: pass
+r, h = Path(sys.argv[2]), Path(sys.argv[3]); h.mkdir(parents=True, exist_ok=True)
+(r / "overlays").mkdir(exist_ok=True); (r / "overlays" / "probe.txt").write_text("тест", encoding="utf-8")
+for f in ("master.mp4", "master_540.mp4", "master_transcript.json", "face.json", "overlays"):
+    if (r / f).exists() and not (h / f).exists(): os.symlink(r / f, h / f)
+for f in ("master.mp4", "master_transcript.json", "overlays"):
+    p = h / f; assert p.exists() and (os.name != "nt" or not p.is_symlink()), f"{f}: missing or a real symlink"
+    print(f"{f}: {'folder ' + str(sorted(x.name for x in p.iterdir())) if p.is_dir() else str(p.stat().st_size) + ' bytes, links ' + str(p.stat().st_nlink)}")
+assert (h / "overlays" / "probe.txt").read_text(encoding="utf-8") == "тест"
+PY
+}
+heads_cards() {   # four looks the task names (window, circle, cloud, polaroid without photos) + one picked by its catalog name
+  py - "$(wp "$REEL")" "$(wp "$HREEL")" <<'PY'
+import json, sys; from pathlib import Path
+r, h = Path(sys.argv[1]), Path(sys.argv[2]); e = json.load(open(r / "edit.json", encoding="utf-8"))
+e["cards"] = [
+  {"type": "head", "look": "window",   "words": ["сьогодні", "знайти", "клієнтів"], "start": 0.8, "end": 4.4, "id": "h_window"},
+  {"type": "head", "look": "circle",   "words": ["перше", "упакуй", "профіль"], "start": 5.3, "end": 7.3, "id": "h_circle"},
+  {"type": "head", "look": "cloud",    "words": ["запусти", "рекламу", "двадцять", "доларів"], "start": 7.6, "end": 11.0, "id": "h_cloud"},
+  {"type": "head", "look": "polaroid", "words": ["третє", "пиши", "людям", "першою"], "start": 11.8, "end": 14.2, "id": "h_polaroid"},
+  {"type": "motion", "name": "head-top", "vars": {"text": "підписуйся"}, "start": 14.3, "end": 16.3, "id": "h_top"},
+]
+json.dump(e, open(h / "edit.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+print(len(e["cards"]), "head cards,", len(e["captions"]), "captions")
+PY
+}
+heads_render() {
+  local o; o="$(REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$HREEL" 2>&1)"; local rc=$?; echo "$o"; [ $rc = 0 ] || return $rc
+  ! printf '%s\n' "$o" | grep -E "head: unknown look|drawn as window|Traceback"   # every look built as itself
+}
+heads_check() {   # mid-card frames: the brand background must fill the frame around the small video window
+  py - "$(wp "$HREEL/draft.mp4")" "$(wp "$OUTD")" <<'PY'
+import subprocess, sys
+src, out = sys.argv[1], sys.argv[2]
+# (look, second, x, y in the 540x960 draft, expected colour or None): light = #FAFAF7 (light #FFFFFF), pop #FFC3CC, soft #D2DB76
+checks = [("window", 2.6, 8, 8, (0xFA, 0xFA, 0xF7)), ("circle", 6.3, 8, 8, (0xFF, 0xC3, 0xCC)), ("cloud", 9.2, 8, 8, (0xD2, 0xDB, 0x76)),
+          ("polaroid", 13.0, 8, 8, None), ("top", 15.3, 8, 940, (0xFA, 0xFA, 0xF7))]
+bad = 0
+for look, t, x, y, want in checks:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(t), "-i", src, "-frames:v", "1", f"{out}/head_{look}.jpg"], check=True)
+    px = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", src, "-frames:v", "1", "-vf", f"crop=4:4:{x}:{y},scale=1:1",
+                         "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout[:3]
+    got = tuple(px); ok = want is None or all(abs(a - b) <= 28 for a, b in zip(got, want))
+    bad += not ok; print(f"{'ok ' if ok else 'BAD'} {look:9s} {t:5.1f}s  pixel {got}  want {want or 'any (photo tint)'}")
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", "fps=1,scale=150:-2,tile=6x3", "-frames:v", "1", f"{out}/heads_contact.jpg"])
+sys.exit(1 if bad else 0)
+PY
+}
+heads_menu() {   # the effects menu's «Подачі голови»: all 11 looks on their own clip (menu_previews.heads links files with os.symlink)
+  local o; o="$(py "$S/menu_previews.py" "$(wp "$HREEL")" --only heads --workers 1 2>&1)"; echo "$o"
+  local n; n=$(printf '%s\n' "$o" | grep -c '^ok head-'); echo "rendered $n of 11"
+  mkdir -p "$OUTD/menu"; cp -f "$REELS_HOME"/menu/head-*.mp4 "$OUTD/menu/" 2>/dev/null
+  [ "$n" = 11 ]
+}
+step "heads: linked files (no symlinks)" heads_links
+step "heads: 5 head cards"           heads_cards
+step "heads: render draft"           heads_render
+step "heads: brand colour around the window" heads_check
+step "heads: effects menu (11 looks)" heads_menu
+cp -f "$HREEL/draft.mp4" "$OUTD/heads_draft.mp4" 2>/dev/null
 cp -f "$REEL"/edit.json "$REEL"/face.json "$REEL"/safezones.json "$REEL"/timings.log "$OUTD/" 2>/dev/null
 cp -f "$REEL/draft.mp4" "$OUTD/draft.mp4" 2>/dev/null
 echo; cat "$REPORT"
