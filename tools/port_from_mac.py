@@ -20,9 +20,11 @@ PATCHES = [
     ("SKILL.md", "Then run `bash scripts/set_key.sh PIXABAY_API_KEY`: a Mac window with a hidden field opens, they paste the key there.",
                  "Then run `bash scripts/set_key.sh PIXABAY_API_KEY`: a Windows sign-in style window opens, they paste the key into the password field and press OK."),
     # ---- shell scripts ----
+    ("scripts/page_proxy.sh", 'if [ "$(uname)" = Darwin ]; then HW=(-hwaccel videotoolbox); ENC=(-c:v h264_videotoolbox -b:v "${VB}k" -maxrate "$((VB*13/10))k" -bufsize "$((VB*2))k" -allow_sw 1); fi\n', ""),   # Windows: libx264
+    ("scripts/page_proxy.sh", "nice -n 10 ffmpeg", '"${NICE[@]}" ffmpeg'),
     ("scripts/render.sh", 'MEM_GB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 17179869184) / 1073741824 ))', 'MEM_GB="$(mem_gb)"; MEM_GB="${MEM_GB:-16}"'),
     ("scripts/render.sh", 'BRAND="${REELS_HOME:-$HOME/reels}/brand.json"', 'BRAND="$(wp "${REELS_HOME:-$HOME/reels}/brand.json")"'),
-    ("scripts/render.sh", "nice -n 15 npx", '"${NICE[@]}" npx'),
+    ("scripts/render.sh", 'nice -n "$NI" npx', '"${NICE[@]}" npx'),
     ("scripts/render.sh", "# a Mac notification when the render is done (the person may be away from the screen)\n"
                           'command -v osascript >/dev/null && osascript -e "display notification \\"$(basename "$REEL")\\" with title \\"Рілс відрендерено\\" sound name \\"Glass\\"" >/dev/null 2>&1 || true',
                           "# a Windows notification when the render is done (the person may be away from the screen)\n"

@@ -156,6 +156,95 @@ step "render_queue (locks)"          queue
 step "deliver.sh"                    bash "$S/deliver.sh" "$REEL/draft.mp4" "Тест рілс"
 step "motions.py log"                py "$S/motions.py" log "$(wp "$REEL")"
 
+# ---- 2026-10-24 features: faster cut (cache), captions off under every effect, split framed on the face, real UIs in their
+# own colours, a font per hook line + line spacing, the step-2 video with the effects (graphics_preview.py), page proxy ----
+cut_cache() {   # the same cut twice: the second call keeps master.mp4
+  local o; o="$(REEL_PREVIEW=1 python3 "$S/cut.py" "$(wp "$REEL")" 2>&1)"; echo "$o"; printf '%s\n' "$o" | grep -q "up to date"
+}
+sync_check() {  # picture and sound of the cut are the same length (per-span inputs on whole frames)
+  py - "$(wp "$REEL/master.mp4")" <<'PY'
+import subprocess, sys
+d = {l.split(",")[0]: float(l.split(",")[1]) for l in subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,duration",
+     "-of", "csv=p=0", sys.argv[1]], capture_output=True, text=True).stdout.split() if "," in l}
+print(d); sys.exit(0 if abs(d["video"] - d["audio"]) < 0.1 else 1)
+PY
+}
+page_proxy() {
+  bash "$S/page_proxy.sh" "$REEL/raw.mp4" "$REEL/voice.wav" "$OUTD/src.mp4" && py - "$(wp "$OUTD/src.mp4")" <<'PY'
+import os, subprocess, sys
+wh = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", sys.argv[1]],
+                    capture_output=True, text=True).stdout.strip()
+mb = os.path.getsize(sys.argv[1]) / 1048576; print(wh, f"{mb:.1f} MB"); sys.exit(0 if wh == "540,960" and mb < 19.5 else 1)
+PY
+}
+TREEL="$REELS_HOME/2026-10-24-тест нове"
+today_cards() {   # a copy of the reel with today's card kinds
+  rm -rf "$TREEL"; mkdir -p "$TREEL"; cp -R "$REEL"/. "$TREEL"/; rm -rf "$TREEL/proj" "$TREEL/cutouts" "$TREEL/.cache"
+  py - "$(wp "$TREEL")" "$(wp "$REELS_HOME/fonts")" <<'PY'
+import json, sys; from pathlib import Path
+r, F = Path(sys.argv[1]), sys.argv[2]; e = json.load(open(r / "edit.json", encoding="utf-8"))
+end = json.load(open(r / "master_transcript.json", encoding="utf-8"))[-1]["end"]
+e["caption_style"] = "caption-neon-accent"
+e["text_look"] = {"hook": {"lh": 120, "lines": [{"c1": "#FFC3CC"}, {"ff": {"family": "Lora", "file": F + "/Lora-Italic.ttf", "style": "italic"}}]}}
+e["cards"] = [
+  {"type": "title", "text": "ДЕ ВЗЯТИ / ПЕРШИХ / КЛІЄНТІВ?", "start": 0.1, "end": 3.6, "id": "hook"},
+  {"type": "split", "title": "три кроки", "rows": ["упакуй профіль", "запусти рекламу", "пиши першою"], "start": 4.0, "end": 8.0, "id": "split"},
+  {"type": "motion", "name": "message-thread-reveal", "layout": "dim", "full": True, "quiet": True, "start": 8.5, "end": 11.5, "id": "chat",
+   "vars": {"contactName": "Клієнт", "questionMessage": "Скільки коштує таргет?", "teaserMessage": "Ось прайс"}},
+  {"type": "head", "look": "circle", "words": ["пиши", "першою"], "start": 12.0, "end": min(14.0, end), "id": "circle"},
+]
+json.dump(e, open(r / "edit.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1); print(len(e["cards"]), "cards")
+PY
+}
+today_render() {
+  local o; o="$(REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$TREEL" 2>&1)"; local rc=$?; echo "$o" | tail -20; [ $rc = 0 ] || return $rc
+  ! printf '%s\n' "$o" | grep -E "Traceback|Error:"
+}
+today_check() {   # what the build wrote: each of today's fixes is in the page the renderer saw
+  py - "$(wp "$TREEL")" <<'PY'
+import re, sys; from pathlib import Path
+r = Path(sys.argv[1]); idx = (r / "proj/index.html").read_text(encoding="utf-8"); bad = 0
+def ok(name, cond): global bad; bad += not cond; print(("ok  " if cond else "BAD ") + name)
+cap = next((p for p in (r / "proj/compositions").rglob("caption-neon-accent.html")), None)
+ok("captions hide under the cards (style timeline gets the spans)", bool(cap) and "autoAlpha:0" in cap.read_text(encoding="utf-8"))
+ok("split: the video slides to the face", bool(re.search(r'tl\.to\("#k\d+v",\{y:-\d+', idx)))
+chat = next((p for p in (r / "proj/compositions").rglob("message-thread-reveal.html")), None)
+ok("chat keeps its own look (no brand font / recolour)", bool(chat) and "BrandSans" not in chat.read_text(encoding="utf-8"))
+ok("chat dims with neutral black", "rgba(0,0,0,0.70)" in idx)
+ok("hook line 2 in its own font", "Lora-hk1" in idx)
+ok("hook line spacing 120%", "line-height:1.056" in idx)
+sys.exit(1 if bad else 0)
+PY
+}
+today_frames() { for t in 2 6 10 13; do ffmpeg -v error -y -ss "$t" -i "$TREEL/draft.mp4" -frames:v 1 "$OUTD/today_$t.jpg"; done; }
+step2_video() {   # the step-2 video with the effects, from the page's decisions: import (sounds, a font per line, a «+» effect) + cut + render
+  rm -rf "$TREEL/proj"
+  py - "$(wp "$TREEL")" <<'PY'
+import json, sys; from pathlib import Path
+r = Path(sys.argv[1]); rj = json.load(open(r / "review_out/reel.json", encoding="utf-8"))
+rj["board"] = [{"id": "hook", "type": "title", "kind": "Хук", "text": "ТВІЙ / ХУК", "w0": 0, "place": [90, 1000, 900, 320], "sfx": {"name": "whoosh", "db": -12}}]
+json.dump(rj, open(r / "review_reel.json", "w", encoding="utf-8"), ensure_ascii=False)
+json.dump({"hook": "ДЕ ВЗЯТИ / ПЕРШИХ", "board": {}, "graphicsRequest": {"cutHash": "t"},
+           "look": {"hook": {"lh": 110, "lines": [{}, {"ff": {"family": "Lora", "gf": "Lora:ital,wght@1,400", "weight": 400, "style": "italic"}}]}},
+           "effects": [{"id": "ef1", "w0": 5, "at": 2.0, "dur": 3, "text": "№42 count-up: цифра рахує", "files": []}],
+           "sfxSwap": {"ef1": "pop", "hook": "swish"}}, open(r / "review.json", "w", encoding="utf-8"), ensure_ascii=False)
+PY
+  local o; o="$(python3 "$S/graphics_preview.py" "$(wp "$TREEL")" "$(wp "$TREEL/review.json")" 2>&1)"; local rc=$?; echo "$o" | tail -25; [ $rc = 0 ] || return $rc
+  printf '%s\n' "$o" | grep -q "| sound: pop" && printf '%s\n' "$o" | grep -q "HOOK LINE 2 FONT: Lora" && [ -s "$TREEL/gfx_preview.mp4" ] \
+    && grep -q '"rendered": true' "$TREEL/gfx_preview.json"
+}
+precheck_cache() { local o; o="$(python3 "$S/precheck.py" "$(wp "$TREEL")" 2>&1)"; echo "$o"; printf '%s\n' "$o" | grep -q "not transcribing again"; }
+step "cut.py cache (same cut = no re-cut)" cut_cache
+step "cut: picture and sound in sync" sync_check
+step "page_proxy.sh (540p, under 20 MB)" page_proxy
+step "today: cards (split, chat, head, caption style, hook fonts)" today_cards
+step "today: render draft"           today_render
+step "today: fixes in the build"     today_check
+step "today: frames"                 today_frames
+step "step-2 video (graphics_preview.py)" step2_video
+step "precheck cache"                precheck_cache
+cp -f "$TREEL/gfx_preview.mp4" "$OUTD/gfx_preview.mp4" 2>/dev/null; cp -f "$TREEL/draft.mp4" "$OUTD/today_draft.mp4" 2>/dev/null
+
 # ---- «подачі голови» (scripts/heads.py): a second reel made of the same cut, its video shrinks into shapes on brand colours ----
 HREEL="$REELS_HOME/2026-10-20-подачі голови"
 heads_links() {   # the scripts link files with os.symlink, which needs admin rights on a student's PC: _win.py makes a hard link

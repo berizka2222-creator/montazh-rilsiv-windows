@@ -154,8 +154,9 @@ def export(reel, proposal, out):
     proposed_cut = [i for i, w in enumerate(words) if not w.get("filler") and
                     not any(a <= (w["s"] + w["e"]) / 2 <= b for a, b in keep)]
     # pauses Claude keeps on purpose: after a question or exclamation, or longer than 0.8 s after a sentence end
-    keep_pauses = [i for i in range(len(words) - 1) if re.search(r"[?!]$", words[i]["text"]) or
-                   (re.search(r"[.]$", words[i]["text"]) and words[i + 1]["s"] - words[i]["e"] > 0.8)]
+    # a silence over 1.5 s (reading notes, thinking) is never kept whole
+    keep_pauses = [i for i in range(len(words) - 1) if words[i + 1]["s"] - words[i]["e"] <= 1.5 and (re.search(r"[?!]$", words[i]["text"]) or
+                   (re.search(r"[.]$", words[i]["text"]) and words[i + 1]["s"] - words[i]["e"] > 0.8))]
     acc = set(proposal.get("accentWords", []))
     mode = brand.get("captions", {}).get("mode", "phrase")
     caps, cur = [], []
@@ -258,9 +259,10 @@ def do_import(reel, review):
                 if g.get("zoom"): spec["x"] = g["place"][0]   # shrunk to fit above the head (behind the person)
             elif g.get("type") in ("motion", "custom", "shot", "image"): spec["box" if g["type"] in ("motion", "custom") else "y"] = g["place"] if g["type"] in ("motion", "custom") else g["place"][1]
         spec.update(start=round(g["start"], 3), end=round(g["end"], 3), id=g["id"])
-        if (d.get("sfxSwap") or {}).get(g["id"]) and isinstance(spec.get("sfx"), dict): spec["sfx"] = {**spec["sfx"], "name": d["sfxSwap"][g["id"]]}
+        if (d.get("sfxSwap") or {}).get(g["id"]):   # a sound picked on «Звуки на графіці» (her photos / GIFs had none: they get one now)
+            spec["sfx"] = {**(spec["sfx"] if isinstance(spec.get("sfx"), dict) else {"db": -14}), "name": d["sfxSwap"][g["id"]]}
         if g["id"] in (d.get("sfxOff") or {}) and d["sfxOff"][g["id"]]: spec["sfx"] = False
-        if g.get("type") == "overlay":   # uploaded on the page: Claude downloads the asset into <reel>/overlays/ before rendering
+        if g.get("type") == "overlay" and g.get("assetId"):   # uploaded on the page: Claude downloads the asset into <reel>/overlays/ before rendering (Claude's own brand overlays carry their src)
             spec = {k: v for k, v in spec.items() if k not in ("imgUrl", "user", "media", "file", "memeText", "findOpt")}
             spec["src"] = f"overlays/{g['assetId']}"
             have = list((reel / "overlays").glob(g["assetId"] + ".*")) if (reel / "overlays").exists() else []
@@ -287,6 +289,19 @@ def do_import(reel, review):
                 **({"l2": {**base_look.get(k, {}).get("l2", {}), **page_look.get(k, {}).get("l2", {})},
                     "lines": merge_lines(base_look.get(k, {}).get("lines"), page_look.get(k, {}).get("lines"))} if k in ("hook", "cta") else {})}
             for k in set(base_look) | set(page_look)}
+    def font_file(f):   # a font she picked on the page (design system file or Google Font with Ukrainian letters) -> a local file
+        dst = HOME / "fonts" / f["brandFile"] if f.get("brandFile") else HOME / "fonts" / "google" / (re.sub(r"\W+", "-", f["gf"]).strip("-") + ".ttf")
+        if not dst.exists() and f.get("gf"):
+            import urllib.request
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            css = urllib.request.urlopen(f"https://fonts.googleapis.com/css2?family={f['gf']}&display=swap").read().decode()
+            urllib.request.urlretrieve(re.search(r"url\((https://[^)]+\.ttf)\)", css).group(1), dst)
+        return {"family": f["family"], "file": str(dst), "weight": f.get("weight", 400), "style": f.get("style", "normal")}
+    for k in ("hook", "cta"):   # a font per hook / CTA line («Шрифт» on each line)
+        for j, ln in enumerate((look.get(k) or {}).get("lines") or []):
+            if ln and ln.get("ff") and (ln["ff"].get("gf") or ln["ff"].get("brandFile")):
+                try: ln["ff"] = font_file(ln["ff"]); print(f"{k.upper()} LINE {j + 1} FONT: {ln['ff']['family']}")
+                except Exception as e: print(f"warning: {k} line {j + 1} font {ln['ff'].get('family')} not downloaded ({e}): brand font instead"); ln.pop("ff")
     if look:
         extra["text_look"] = look; print("TEXT LOOK:", json.dumps(look, ensure_ascii=False))
         if page_look and (d.get("look") or {}).get("keep"):   # becomes the brand default (reel.json "look" on the next reels)
@@ -331,8 +346,9 @@ def do_import(reel, review):
     for e in sorted(d.get("effects") or [], key=lambda e: e.get("at", 0)):   # effects they asked for on the page («Ефекти»)
         w = W[e["w0"]] if 0 <= e.get("w0", -1) < len(W) else {"text": "?", "s": 0}
         files = "; ".join(f"{f['name']} -> DOWNLOAD asset {f['id']} into {reel / 'effects'}" for f in e.get("files") or [])
+        snd = "off" if (d.get("sfxOff") or {}).get(e["id"]) else (d.get("sfxSwap") or {}).get(e["id"]) or "whoosh_soft"   # «Звуки на графіці»
         print(f"EFFECT REQUESTED @ cut {e.get('at', 0):.1f}s for {e.get('dur', 3)}s, from word \"{w['text']}\" (source {w['s']:.1f}s): {e['text']}"
-              + (f" | files: {files}" if files else ""))
+              + f" | sound: {snd}" + (f" | files: {files}" if files else ""))
     for k, n in (d.get("notes") or {}).items():
         if n.strip(): print(f"NOTE ({k}):", n.strip())
     for k, files in (d.get("refs") or {}).items():   # reference pictures/videos she attached to a section's note

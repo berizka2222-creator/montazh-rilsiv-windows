@@ -107,6 +107,7 @@ textarea{min-height:80px;resize:vertical}
 .card.dropped{opacity:.55}
 .thumb{position:relative;width:90px;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#222 center/cover}
 .thumb .gbox{border-width:1.5px;font-size:0}
+.gbox.gone{border-color:var(--cut-bg);background:rgba(0,0,0,.45);color:#fff;align-items:center;font-size:12px}
 .approx{font:600 10px var(--f-body);color:var(--muted);text-align:center;margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
 .card .kind{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--pink)}
 .card .what{margin:2px 0 4px}
@@ -540,6 +541,23 @@ section[data-p="captions"] .lookcards{counter-reset:none}
 @media (max-width:560px){.sr{border-radius:16px;flex-wrap:wrap}.sr input{flex:1;width:auto!important;min-width:90px}}
 /* timeline */
 .tl{margin:4px 0 16px;border:1px solid var(--line);border-radius:14px;padding:10px 12px 8px;background:rgba(255,255,255,.025);user-select:none;-webkit-user-select:none}
+#addpick{border:1px solid var(--line);border-radius:18px;padding:0;background:var(--bg);color:var(--ink);width:min(760px,94vw);max-height:88vh}
+#addpick::backdrop{background:rgba(0,0,0,.7)}
+#addpick .apin{padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-height:86vh}
+#addpick .aphead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#addpick .apbody{overflow:auto;min-height:120px}
+#addpick .apq,#addpick .apown{width:100%;box-sizing:border-box;margin-bottom:8px}
+#addpick .capopt{text-align:left}
+#sfxpick,.pickdlg{border:1px solid var(--line);border-radius:18px;padding:0;background:var(--bg);color:var(--ink);width:min(640px,94vw);max-height:88vh}
+.pickdlg::backdrop{background:rgba(0,0,0,.7)}
+#sfxpick .apin{padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-height:86vh}#sfxpick .aphead{display:flex;justify-content:space-between;align-items:center;gap:10px}#sfxpick .apbody{overflow:auto}
+.sfxtop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sfxgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.sfxopt{display:flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:3px}.sfxopt.on{border-color:var(--accent);background:var(--now)}
+.sfxopt .sfxname{flex:1;text-align:left;background:none;border:0;color:var(--ink);font:500 13px var(--f-body);cursor:pointer;padding:6px}
+.tlb.t4{background:rgba(210,219,118,.35);color:var(--ink);cursor:pointer;font-size:10px}.tlb.t4.off{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.tladd{padding:4px 12px;font-size:13px}
+.tab[hidden]{display:none!important}
 .tlhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}.tlhead b{font-size:14px}.tlhead .mode{font-size:12px}
 .tlbody{position:relative}
 .tlrow{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;align-items:center;margin:3px 0}
@@ -561,9 +579,8 @@ section[data-p="captions"] .lookcards{counter-reset:none}
 .tlsel{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .tlsel span{flex:1;min-width:160px}.tlsel .b{font-size:12px!important;padding:4px 10px!important}
 @media (max-width:560px){.tlrow{grid-template-columns:58px minmax(0,1fr)}.tlplay{left:calc(66px + (100% - 66px) * var(--p, 0))}.tlhead .mode{display:none}}
-.tlplay{pointer-events:auto!important;cursor:ew-resize;touch-action:none;z-index:2}
-.tlplay::before{content:"";position:absolute;left:-9px;right:-9px;top:0;bottom:0}
-.tlplay::after{content:"";position:absolute;top:-6px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--bg)}
+.tlplay{pointer-events:none!important;touch-action:none;z-index:2}   /* the line lets clicks through to the blocks under it: only the knob on top drags */
+.tlplay::after{content:"";position:absolute;top:-8px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px var(--bg);pointer-events:auto;cursor:ew-resize}
 .tlruler .tllane,.tllane{cursor:ew-resize}.tllane .tlb{cursor:grab}
 body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
 /* step 2: one place: timeline -> the picked element's panel (preview, decision, timing, its own settings) -> everything as a list */
@@ -723,9 +740,9 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="cuts">Нарізка <span class="dot" hidden></span></button>
       <button class="tab" role="tab" data-tab="overlays">Накладення <span class="dot" hidden></span></button>
-      <button class="tab" role="tab" data-tab="effects">Ефекти <span class="dot" hidden></span></button>
+      <button class="tab" role="tab" data-tab="effects" hidden>Ефекти <span class="dot" hidden></span></button>
       <button class="tab gone" role="tab" data-tab="graphics">Графіка <span class="dot" hidden></span></button>
-      <button class="tab" role="tab" data-tab="captions">Субтитри <span class="dot" hidden></span></button>
+      <button class="tab" role="tab" data-tab="captions">Хук і субтитри <span class="dot" hidden></span></button>
       <button class="tab" role="tab" data-tab="sound">Звук і колір <span class="dot" hidden></span></button>
       <button class="tab" role="tab" data-tab="mystyle">Стиль монтажу <span class="dot" hidden></span></button>
       <button class="tab gone" role="tab" data-tab="preview">Чернетка</button>
@@ -805,11 +822,7 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
         <span class="mode" id="efmsg" aria-live="polite"></span>
         <div class="cards" id="eflist"></div>
       </div>
-      <details class="panel" id="refbox"><summary>Рілс-референс: «зроби як тут»</summary>
-        <div class="ctl" style="margin-top:8px"><input type="text" id="refurl" placeholder="Посилання на рілс в Instagram або TikTok"><button class="b" id="refadd" type="button">Додати</button></div>
-        <p class="mode" style="margin:6px 0 0">Claude розбере прийоми (хук, субтитри, темп, графіку) і перенесе їх у твій рілс твоїми словами й кольорами.</p>
-        <div id="reflist"></div>
-        <p style="margin:10px 0 0"><a class="libbtn" id="eflib" href="https://hyperframes.heygen.com/catalog" target="_blank" rel="noopener">Ще більше ефектів у бібліотеці ↗</a></p></details>
+
     </section>
 
     <section data-p="graphics" hidden>
@@ -825,13 +838,6 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
       <div class="tl" id="tl" hidden></div>
       <div class="insp" id="insp"></div>
       <div id="holder" hidden>
-        <div id="hookbox" class="ibox">
-          <div id="hookoptbox" hidden><label>Обери варіант або напиши свій</label><div class="hookopts" id="hookopts"></div></div>
-          <label for="hooktext">Текст хука</label>
-          <input type="text" id="hooktext" placeholder="Напр.: Чому не / виходить / заробляти? (/ = новий рядок)">
-          <div class="ctl" hidden><button class="b quiet" id="hookmove" type="button">Перемістити хук на відео</button><span class="mode" id="hookmovemsg"></span></div>
-          <details class="lookdet" id="hooklookdet"><summary>Вигляд хука: розташування, розмір, кожен рядок окремо (шрифт, колір, контур, фон), тінь</summary><div id="hooklook"></div></details>
-        </div>
         <div id="ctabox" class="ibox">
           <label for="ctatext">Текст заклику</label>
           <input type="text" id="ctatext" placeholder="Напр.: Пиши АНКЕТА в директ (слово КАПСОМ стане рожевим)">
@@ -849,8 +855,18 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
     </section>
 
     <section data-p="captions" hidden>
-      <div class="sechead"><h2>Субтитри</h2><div class="sectools"><button class="icon notebtn" type="button">+ Нотатка</button></div></div>
+      <div class="sechead"><h2>Хук і <em>субтитри</em></h2><div class="sectools"><button class="icon notebtn" type="button">+ Нотатка</button></div></div>
       <p class="lede">Тапни слово, щоб зробити його акцентом. <b>правити</b> змінює текст, ±0,1 зсуває початок, <b>об'єднати</b> склеює з наступним, <b>роз'єднати</b> ставить кожне слово окремо.</p>
+      <div class="panel hookhome" id="hookhome"><div class="gtop"><label style="margin:0">Хук</label><span class="mode">перші 3,5 с рілса. Налаштовуєш тут, до монтажу: потім він уже буде у відео з ефектами.</span></div>
+          <div id="hookbox" class="ibox">
+            <div id="hookoptbox" hidden><label>Обери варіант або напиши свій</label><div class="hookopts" id="hookopts"></div></div>
+            <label for="hooktext">Текст хука</label>
+            <input type="text" id="hooktext" placeholder="Напр.: Чому не / виходить / заробляти? (/ = новий рядок)">
+            <div class="ctl"><button class="b quiet" id="hookmove" type="button">Перемістити хук на відео</button><span class="mode" id="hookmovemsg"></span></div>
+            <details class="lookdet" id="hooklookdet" open><summary>Вигляд хука: розташування, розмір, кожен рядок окремо (шрифт, колір, контур, фон), тінь</summary><div id="hooklook"></div></details>
+          </div>
+      </div>
+      <div class="gtop" style="margin-top:18px"><label style="margin:0">Субтитри</label></div>
       <div class="capplace"><div class="ggrid lookcards capcards">
         <div class="ggroup"><div class="gtitle">Де субтитри</div><div class="gpre" id="capplace"></div>
           <p class="mode" style="margin:8px 0 0">Зараз: <b id="capyval"></b>. Або перетягни субтитр на відео.</p></div>
@@ -883,9 +899,6 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
           <div class="gtop"><div class="gpre" id="gradepre"></div></div>
           <div id="gradebox"></div>
           <div class="pair" id="colour"></div></div>
-        <div class="panel scard"><div class="gtitle">Звуки на графіці</div>
-          <p class="lede">Звуки на появі графіки. Вимкни зайві або заміни.</p>
-          <div id="cues"></div></div>
       </div>
     </section>
 
@@ -913,6 +926,11 @@ body.scrubbing,body.scrubbing *{cursor:ew-resize!important;user-select:none}
         <p class="mode" id="stylehint1" style="margin-top:8px"></p>
       </div>
       <div class="stgrid pickgrid" id="stylegrid1"></div>
+          <details class="panel" id="refbox"><summary>Рілс-референс: «зроби як тут»</summary>
+        <div class="ctl" style="margin-top:8px"><input type="text" id="refurl" placeholder="Посилання на рілс в Instagram або TikTok"><button class="b" id="refadd" type="button">Додати</button></div>
+        <p class="mode" style="margin:6px 0 0">Claude розбере прийоми (хук, субтитри, темп, графіку) і перенесе їх у твій рілс твоїми словами й кольорами.</p>
+        <div id="reflist"></div>
+        <p style="margin:10px 0 0"><a class="libbtn" id="eflib" href="https://hyperframes.heygen.com/catalog" target="_blank" rel="noopener">Бібліотека ефектів ↗</a></p></details>
     </section>
 
     <section data-p="preview" hidden>

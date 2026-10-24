@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the reel from edit.json and render it. Logs how long each part took to <reel>/timings.log.
 # Usage: render.sh <reel-folder> [--capcut] [--final]
-# Low priority throughout. REEL_DRAFT=1: 540p draft.mp4, 3 Chrome workers. Otherwise final.mp4 at 1080p (--final: the brand
+# Low priority throughout. REEL_DRAFT=1: 540p draft.mp4, 2 Chrome workers (3 above 8 GB). Otherwise final.mp4 at 1080p (--final: the brand
 # resolution, e.g. 4K), 1 worker on an 8 GB Mac.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
@@ -14,6 +14,9 @@ BRAND="$(wp "${REELS_HOME:-$HOME/reels}/brand.json")"
 RES="$(python3 -c "import json;r=json.load(open('$BRAND')).get('resolution',[1080,1920]);print('portrait-4k' if r[0]>=2160 else 'portrait')")"
 [ "$FINAL" = 1 ] || RES=portrait                 # previews at 1080p: a quarter of the pixels of 4K
 stamp() { echo "$(date +%s) $1" >> "$REEL/timings.log"; }
+# low priority, but never past 19: the renderer sets its own setup worker to 19, and a shell that already runs jobs niced
+# (zsh puts background jobs at +5) plus nice 15 = 20 makes that a priority raise macOS refuses (uv_os_setpriority EACCES)
+CUR_NICE="$(ps -o nice= -p $$ 2>/dev/null | tr -d ' ')"; case "$CUR_NICE" in ''|*[!0-9-]*) CUR_NICE=0;; esac; NI=$(( 19 - ${CUR_NICE:-0} )); [ "$NI" -gt 15 ] && NI=15; [ "$NI" -lt 0 ] && NI=0
 
 # a preview cut leaves a 1080p master.mp4; re-cut it at the brand resolution so the final isn't an upscale
 if [ "$FINAL" = 1 ] || [ -z "${REEL_DRAFT:-}" ]; then   # the real render needs a full-quality master: a draft cut (540p) is re-cut first
@@ -27,9 +30,10 @@ fi
 stamp "build:start"; python3 "$S/build_reel.py" "$REEL" ${ARGS[@]+"${ARGS[@]}"}; stamp "build:end"
 stamp "render:start"
 if [ -n "${REEL_DRAFT:-}" ]; then   # fast review draft at 540x960 (build_reel.py shrinks the stage); -> draft.mp4, final.mp4 untouched
-  # 540p frames are small: 3 workers fit in 8 GB, so HyperFrames' automatic low-memory profile (1 worker) is switched off.
-  # Measured on a 30 s draft (M1, 8 GB): 29 s as before -> 24 s. Fast capture can't help: glass cards use backdrop-filter.
-  "${NICE[@]}" npx -y hyperframes@0.8.145 render "$REEL/proj" --workers "${REEL_DRAFT_WORKERS:-3}" --no-low-memory-mode --gpu -o "$REEL/draft.mp4" --quality draft --quiet
+  # 540p frames are small, so HyperFrames' automatic low-memory profile (1 worker) is switched off. 3 workers were faster on a
+  # 30 s draft, but on a 90 s reel with many motions (8 GB) they timed out and redid 408 frames in one worker: 6m48 instead
+  # of ~2 min (2026-10-24). 2 workers on 8 GB, 3 on bigger Macs. Fast capture can't help: glass cards use backdrop-filter.
+  "${NICE[@]}" npx -y hyperframes@0.8.145 render "$REEL/proj" --workers "${REEL_DRAFT_WORKERS:-$([ "$MEM_GB" -le 8 ] && echo 2 || echo 3)}" --no-low-memory-mode --gpu -o "$REEL/draft.mp4" --quality draft --quiet
   stamp "render:end"; echo "draft: $REEL/draft.mp4"; exit 0
 fi
 "${NICE[@]}" npx -y hyperframes@0.8.145 render "$REEL/proj" --workers "$WORKERS" -o "$REEL/final.mp4" --resolution "$RES" --quality delivery --crf "${REEL_CRF:-14}" --quiet   # CRF 14: graphics and skin stay clean through Instagram's own re-encode
