@@ -192,6 +192,8 @@ e["cards"] = [
   {"type": "motion", "name": "message-thread-reveal", "layout": "dim", "full": True, "quiet": True, "start": 8.5, "end": 11.5, "id": "chat",
    "vars": {"contactName": "Клієнт", "questionMessage": "Скільки коштує таргет?", "teaserMessage": "Ось прайс"}},
   {"type": "head", "look": "circle", "words": ["пиши", "першою"], "start": 12.0, "end": min(14.0, end), "id": "circle"},
+  {"type": "fx", "fx": "spotlight", "text": "КЛІЄНТИ", "start": 14.2, "end": min(15.8, end - 0.2), "id": "fx_spot"},
+  {"type": "fx", "fx": "orbit", "start": 14.6, "end": min(16.0, end - 0.1), "id": "fx_orbit"},
 ]
 json.dump(e, open(r / "edit.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1); print(len(e["cards"]), "cards")
 PY
@@ -213,10 +215,11 @@ ok("chat keeps its own look (no brand font / recolour)", bool(chat) and "BrandSa
 ok("chat dims with neutral black", "rgba(0,0,0,0.70)" in idx)
 ok("hook line 2 in its own font", "Lora-hk1" in idx)
 ok("hook line spacing 120%", "line-height:1.056" in idx)
+ok("Vibha's effects drawn into the draft video (master_fx_540.mp4)", (r / "master_fx_540.mp4").exists() and (r / "proj/master.mp4").stat().st_size == (r / "master_fx_540.mp4").stat().st_size)
 sys.exit(1 if bad else 0)
 PY
 }
-today_frames() { for t in 2 6 10 13; do ffmpeg -v error -y -ss "$t" -i "$TREEL/draft.mp4" -frames:v 1 "$OUTD/today_$t.jpg"; done; }
+today_frames() { for t in 2 6 10 13 14.8; do ffmpeg -v error -y -ss "$t" -i "$TREEL/draft.mp4" -frames:v 1 "$OUTD/today_$t.jpg"; done; cp -f "$TREEL/draft.mp4" "$OUTD/today_draft.mp4"; }
 step2_video() {   # the step-2 video with the effects, from the page's decisions: import (sounds, a font per line, a «+» effect) + cut + render
   rm -rf "$TREEL/proj"
   py - "$(wp "$TREEL")" <<'PY'
@@ -237,13 +240,16 @@ precheck_cache() { local o; o="$(python3 "$S/precheck.py" "$(wp "$TREEL")" 2>&1)
 step "cut.py cache (same cut = no re-cut)" cut_cache
 step "cut: picture and sound in sync" sync_check
 step "page_proxy.sh (540p, under 20 MB)" page_proxy
-step "today: cards (split, chat, head, caption style, hook fonts)" today_cards
+step "setup_fx.sh (Vibha's effects: Python 3.12 + MediaPipe)" bash "$S/setup_fx.sh"
+fx_previews() { python3 "$S/fx_pass.py" "$(wp "$REEL")" --previews --names spotlight,orbit,the-bill,tier-list,apple-toggles && ls "$REELS_HOME/menu"/fx-*.mp4; }
+step "fx menu clips (5 of 42)"       fx_previews
+step "today: cards (split, chat, head, caption style, hook fonts, Vibha fx)" today_cards
 step "today: render draft"           today_render
 step "today: fixes in the build"     today_check
 step "today: frames"                 today_frames
 step "step-2 video (graphics_preview.py)" step2_video
 step "precheck cache"                precheck_cache
-cp -f "$TREEL/gfx_preview.mp4" "$OUTD/gfx_preview.mp4" 2>/dev/null; cp -f "$TREEL/draft.mp4" "$OUTD/today_draft.mp4" 2>/dev/null
+cp -f "$TREEL/gfx_preview.mp4" "$OUTD/gfx_preview.mp4" 2>/dev/null
 
 # ---- «подачі голови» (scripts/heads.py): a second reel made of the same cut, its video shrinks into shapes on brand colours ----
 HREEL="$REELS_HOME/2026-10-20-подачі голови"

@@ -188,7 +188,7 @@ def swap(rel, old, new):
 
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
-    shutil.copytree(SRC, OUT, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store", "engine"))
+    shutil.copytree(SRC, OUT, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store", "engine", ".venv"))
     for rel in MAC_ONLY: (OUT / rel).unlink(missing_ok=True)
     for rel, old, new in PATCHES: swap(rel, old, new)
     sk = OUT / "SKILL.md"; t = sk.read_text(encoding="utf-8")
