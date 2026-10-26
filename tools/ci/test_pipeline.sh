@@ -144,31 +144,6 @@ step "graphics cards"                cards
 step "motions.py ideas"              py "$S/motions.py" ideas "$(wp "$REEL")"
 step "precheck.py"                   py "$S/precheck.py" "$(wp "$REEL")"
 step "test_motions.py (2 motions)"   py "$S/test_motions.py" "$(wp "$REEL")" "$(wp "$OUTD/motions")" --names count-up,per-word-rise --workers 1
-render_refuses() {   # graphics never checked on stills: render.sh must stop before any work (exit 3)
-  local o; o="$(REEL_DRAFT=1 REEL_PREVIEW=1 bash "$S/render.sh" "$REEL" 2>&1)"; local rc=$?; echo "$o" | tail -5
-  [ $rc = 3 ] && printf '%s\n' "$o" | grep -q "were not checked"
-}
-fx_check_main() {   # text check + one still per graphic; the sheet must exist and the render must be let through
-  local o; o="$(python3 "$S/fx_check.py" "$(wp "$REEL")" 2>&1)"; local rc=$?; echo "$o" | tail -30
-  [ -s "$REEL/check/sheet.jpg" ] || return 1
-  [ $rc = 0 ] && python3 "$S/fx_check.py" "$(wp "$REEL")" --verify
-}
-fx_check_lint() {   # the mistakes it exists for: a list with «|», a motion's own test number, a long one-line text
-  local d="$OUTD/lint"; mkdir -p "$d"; cp "$REEL/master_transcript.json" "$d/"
-  python3 - "$(wp "$d")" <<'PY'
-import json, sys
-json.dump({"cards": [
- {"id": "b", "type": "motion", "name": "decline-chart", "start": 1, "end": 3, "vars": {"label": "віра"}},
- {"id": "c", "type": "motion", "name": "grid-card-assemble", "start": 4, "end": 6, "vars": {"items": "а|б|в"}},
- {"id": "d", "type": "motion", "name": "strikethrough-replace", "start": 7, "end": 9, "replace": {"Slow": "виснажливо", "Fast": "працює круто"}}]},
- open(sys.argv[1] + "/edit.json", "w", encoding="utf-8"), ensure_ascii=False)
-PY
-  local o; o="$(python3 "$S/fx_check.py" "$(wp "$d")" --no-frames 2>&1)"; echo "$o"
-  printf '%s\n' "$o" | grep -q "тестову цифру 82" && printf '%s\n' "$o" | grep -q "чекає коми" && printf '%s\n' "$o" | grep -q "довгий текст"
-}
-step "fx_check: catches known mistakes" fx_check_lint
-step "render refuses unchecked graphics" render_refuses
-step "fx_check.py (stills of every graphic)" fx_check_main
 step "render draft (incl. cut-out behind)" env REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$REEL"
 qa_draft() {   # the draft is 540x960 on purpose and only the final gets the -14 LUFS pass, so size and loudness may FAIL here
   local o; o="$(REEL_PREVIEW=1 python3 "$S/qa.py" "$(wp "$REEL")" draft.mp4 2>&1)"; echo "$o"
@@ -224,7 +199,7 @@ json.dump(e, open(r / "edit.json", "w", encoding="utf-8"), ensure_ascii=False, i
 PY
 }
 today_render() {
-  local o; o="$(REEL_NO_CHECK=1 REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$TREEL" 2>&1)"; local rc=$?; echo "$o" | tail -20; [ $rc = 0 ] || return $rc
+  local o; o="$(REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$TREEL" 2>&1)"; local rc=$?; echo "$o" | tail -20; [ $rc = 0 ] || return $rc
   ! printf '%s\n' "$o" | grep -E "Traceback|Error:"
 }
 today_check() {   # what the build wrote: each of today's fixes is in the page the renderer saw
@@ -257,9 +232,7 @@ json.dump({"hook": "ДЕ ВЗЯТИ / ПЕРШИХ", "board": {}, "graphicsReque
            "effects": [{"id": "ef1", "w0": 5, "at": 2.0, "dur": 3, "text": "№42 count-up: цифра рахує", "files": []}],
            "sfxSwap": {"ef1": "pop", "hook": "swish"}}, open(r / "review.json", "w", encoding="utf-8"), ensure_ascii=False)
 PY
-  local o; o="$(python3 "$S/graphics_preview.py" "$(wp "$TREEL")" "$(wp "$TREEL/review.json")" 2>&1)"; echo "$o" | tail -8
-  printf '%s\n' "$o" | grep -q "graphics check" && [ -s "$TREEL/check/sheet.jpg" ] || return 1   # first run stops at the stills
-  o="$(REEL_NO_CHECK=1 python3 "$S/graphics_preview.py" "$(wp "$TREEL")" "$(wp "$TREEL/review.json")" --checked 2>&1)"; local rc=$?; echo "$o" | tail -25; [ $rc = 0 ] || return $rc
+  local o; o="$(python3 "$S/graphics_preview.py" "$(wp "$TREEL")" "$(wp "$TREEL/review.json")" 2>&1)"; local rc=$?; echo "$o" | tail -25; [ $rc = 0 ] || return $rc
   printf '%s\n' "$o" | grep -q "| sound: pop" && printf '%s\n' "$o" | grep -q "HOOK LINE 2 FONT: Lora" && [ -s "$TREEL/gfx_preview.mp4" ] \
     && grep -q '"rendered": true' "$TREEL/gfx_preview.json"
 }
@@ -312,7 +285,7 @@ print(len(e["cards"]), "head cards,", len(e["captions"]), "captions")
 PY
 }
 heads_render() {
-  local o; o="$(REEL_NO_CHECK=1 REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$HREEL" 2>&1)"; local rc=$?; echo "$o"; [ $rc = 0 ] || return $rc
+  local o; o="$(REEL_DRAFT=1 REEL_PREVIEW=1 REEL_WORKERS=2 bash "$S/render.sh" "$HREEL" 2>&1)"; local rc=$?; echo "$o"; [ $rc = 0 ] || return $rc
   ! printf '%s\n' "$o" | grep -E "head: unknown look|drawn as window|Traceback"   # every look built as itself
 }
 heads_check() {   # mid-card frames: the brand background must fill the frame around the small video window

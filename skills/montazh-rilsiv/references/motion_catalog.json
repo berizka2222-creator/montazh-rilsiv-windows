@@ -6761,10 +6761,7 @@
     "zoom": 1.2
    },
    "status": "ready",
-   "no": 28,
-   "replace_default": {
-    "Community": ""
-   }
+   "no": 28
   },
   {
    "name": "avatar-group-hover",
