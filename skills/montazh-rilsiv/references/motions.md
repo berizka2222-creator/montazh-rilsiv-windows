@@ -21,7 +21,8 @@ with what each one is for, its moment and its tested placement, is `references/m
   notification, chart, carousel, lower third, hand-drawn picture, head layout, transition) or `[просте]` (one word, number or
   phrase animating over the video, `motions.py` `is_simple`). At least two thirds of a reel's motions are `[складне]`, `[просте]`
   at most a third and never two in a row. Add 1-2 catalog transitions (`use: transition`) where the topic changes.
-- `split`, `push` and `steps` are rare: at most one of them per reel unless the person asked, none when the previous reel had one.
+- Own motions `rf-*` (2026-10-29, from a reference reel; files in `motions/`, copied into the engine by setup_engine.sh): `rf-stopwatch`, `rf-step-tag`, `rf-emoji-caption` (caption style), `rf-file-upload`, `rf-pause-cut`; usage in `references/split-screen.md`.
+- `push` and `steps` are rare: at most one of them per reel unless the person asked, none when the previous reel had one. `split` is a regular tool for step-by-step moments: `references/split-screen.md`.
 - A motion still has to show what that exact line says. «ideas» suggests, it doesn't decide.
 
 ## Ефекти Vibha (42, `vendor/vibha-fx`)
@@ -47,10 +48,32 @@ built into the reel: catalog entries `fx-<name>` (№310-351, group «Ефект
 - Menu clips: `python3 scripts/fx_pass.py <reel> --previews` → `<REELS_HOME>/menu/fx-*.mp4` (~4 min for all 42, once per person),
   upload and map them in `.motion_previews.json` like the other menu clips.
 
+## Ефекти Гвоздарева (12) і «9 ефектів» (`vendor/gv-fx`)
+
+Two effect packs (`vendor/gv-fx/NOTICE.md`): `scripts/fx12.py` (Олексій Гвоздарев) and `scripts/fx9.py`, run by
+`scripts/run.py` behind the same call as Vibha's engine, so they are ordinary fx cards: catalog `fx-gv-*` (№372-383, group
+«Ефекти Гвоздарева») and `fx-e9-*` (№384-392, group «9 ефектів (частина 2)»), card `{"type": "fx", "fx": "gv-figma", "start",
+"end", "text"?, "opt"?}`. Recipes, timings and sounds per effect: `vendor/gv-fx/reference/EFFECTS-12.md`, `EFFECTS-9.md`.
+- **Text:** `text` becomes the effect's own field: `gv-ransom` "СЛОВО|СЛОВО" (1-2 words ≤9 letters), `gv-figma` the word
+  (`opt.italic` [from, to) letters in the accent serif, `opt.under` [[s, "слово"], …], `opt.grow_at` s), `gv-bignum` the number,
+  `gv-spring` "a|b|c" rows + `opt.title`. `gv-framebreak` takes the handle from brand.json, button «Стежити»; `gv-figma` cursor
+  label = the person's name. `e9-blueprint` labels via `opt.width_label` / `height_label` / `stamp` (default «АРКУШ 01 · М 1:10»).
+- **Pictures:** `gv-orbit` uses `images` (covers of the person's reels; without them stills of this reel); `gv-meme` needs
+  `opt.image` (a picture the person gave, one meme a reel).
+- **Placement:** these may lie over the body (Figma word, glass lens, orbit in front of the chest), never over the face. Look at
+  the fx_check still for every one.
+- **Colours stay as drawn where they mean something:** Figma blue, cream / yellow of bignum and dust are fine; `color` / `bg`
+  take "#RRGGBB" when a brand colour fits better.
+- Cut-out is rembg (`u2net_human_seg`, ~176 MB model on first use) in the same `.venv` (setup_fx.sh). Drawn at 1080×1920 30 fps,
+  scaled to the draft width. ~10-15 s of work per second of effect (slower than Vibha's): keep windows 1-2 s, as in the recipes.
+  `e9-dust` and `e9-freeze` need a still camera (the clean background is taken from the whole clip).
+- A piece where a Vibha effect and a gv / e9 effect overlap goes through Vibha's engine first, then gv-fx on top.
+- `motions.py ideas` marks vertigo, camzoom, zoomblur, lens, bignum, doodle, wave `[просте]` (accents); the rest are scenes.
+
 ## Vertical frame and Ukrainian text (checked 2026-10-21 on all 86, big-face framing)
 
 - A catalog motion never moves or crops the person to make room: it plays over the video in a free area (chest, low third,
-  above the head). Split and full-screen layouts only when the person picked them.
+  above the head). Full-screen layouts only when the moment needs the whole frame; splits per `references/split-screen.md`.
 - Keep every text field short: 2-4 words, about 18 characters a line. Ukrainian words are longer than the English defaults and
   one-line effects clip or run off the frame past that.
 - Statuses: `ready` / `replace` = checked in the frame, suggested by `menu` / `ideas`; `full_only` = only as a whole-frame takeover
@@ -72,7 +95,7 @@ built into the reel: catalog entries `fx-<name>` (№310-351, group «Ефект
   - `front`: transparent, light text on the video, in a band above the head (`place: "top"`) or on the chest (`"chest"`);
   - `behind`: like front, cut out behind the person (text behind the head);
   - `bubble`: a rounded brand window in that band, `"shape": "circle"` for a circle;
-  - `split`: the screen divides, the motion on a brand panel at the top, the person slides into the lower part (`"panel": 820` = its height);
+  - `split`: the screen divides exactly in half (hard cut), the motion on the top panel, the person is zoomed into the lower half (`references/split-screen.md`);
   - `full`: the whole frame is the motion on the brand colour for its seconds (phones, CTA end screens).
   - `low`: transparent, over the video from the chin down, text inks made light (most text effects);
   - `dim`: the video stays as a darkened background (`"dim": 0.82` = how dark), the effect on top over the whole frame;
@@ -104,7 +127,7 @@ built into the reel: catalog entries `fx-<name>` (№310-351, group «Ефект
   catalog lists the strings; build_reel warns when one isn't found.
 - Fonts: every catalog motion is drawn in the brand fonts (body weight for regular text, head for bold), whatever the motion
   ships with. `"keep_fonts": true` keeps its own (rarely: a terminal's monospace).
-- `full` and `split` motions take over the frame for their seconds: keep them 2-4 s, at most two `full` per reel.
+- `full` motions take over the frame for their seconds: keep them 2-4 s, at most two `full` per reel. A `split` block runs 6-16 s with several motions back to back on its top half.
 - **Shader transitions on a cut** (`layout: "transition"`, moment «перехід»). Ready: cross-warp-morph, sdf-iris, swirl-vortex,
   ripple-waves, light-leak, glitch, whip-pan, cinematic-zoom, flash-through-white, chromatic-radial-split, thermal-distortion.
   Manual: domain-warp-dissolve (neon pink/cyan edge baked into the shader), gravitational-lens (a black hole over the face),

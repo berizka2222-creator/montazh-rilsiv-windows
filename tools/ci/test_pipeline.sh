@@ -274,6 +274,25 @@ step "today: cards (split, chat, head, caption style, hook fonts, Vibha fx)" tod
 step "today: render draft"           today_render
 step "today: fixes in the build"     today_check
 step "today: frames"                 today_frames
+GREEL="$REELS_HOME/2026-11-06-тест gv"
+gv_effects() {   # 21 effects of vendor/gv-fx: a Figma word, ransom letters, a wave, and a Vibha + gv piece stacked; rembg cut-out
+  rm -rf "$GREEL"; mkdir -p "$GREEL"; cp "$REEL/master.mp4" "$REEL/master_transcript.json" "$GREEL"/; cp -f "$REEL/face.json" "$GREEL"/ 2>/dev/null
+  py - "$(wp "$GREEL")" <<'PY2'
+import json, sys; from pathlib import Path
+r = Path(sys.argv[1]); end = json.load(open(r / "master_transcript.json", encoding="utf-8"))[-1]["end"]
+c = [{"type": "fx", "fx": "gv-figma", "text": "клієнти", "start": 0.3, "end": 1.6},
+     {"type": "fx", "fx": "gv-ransom", "text": "ДЕ|КЛІЄНТИ", "start": 2.2, "end": 3.4},
+     {"type": "fx", "fx": "e9-wave", "start": 4.0, "end": 5.0},
+     {"type": "fx", "fx": "spotlight", "text": "ЦІНА", "start": 6.0, "end": 7.4},
+     {"type": "fx", "fx": "gv-bignum", "text": "3", "start": 6.4, "end": min(7.6, end - 0.1)}]
+json.dump({"cards": c}, open(r / "edit.json", "w", encoding="utf-8"), ensure_ascii=False); print(len(c), "cards")
+PY2
+  local o; o="$(REEL_DRAFT=1 python3 "$S/fx_pass.py" "$(wp "$GREEL")" 2>&1)"; local rc=$?; printf '%s\n' "$o" | grep -v rawvideo | tail -12; [ $rc = 0 ] || return $rc
+  printf '%s\n' "$o" | grep -q "fx: 5 effects" && [ -s "$GREEL/master_fx_540.mp4" ] && ! printf '%s\n' "$o" | grep -E "Traceback|failed" || return 1
+  for t in 1 2.9 4.5 7; do ffmpeg -v error -y -ss "$t" -i "$GREEL/master_fx_540.mp4" -frames:v 1 "$OUTD/gv_$t.jpg"; done
+  case "$HOME" in *[!\ -~]*) ls "/c/Users/Public/montazh-rilsiv/u2net/"*.onnx ;; esac   # non-Latin profile: the cut-out model sits in a Latin path
+}
+step "gv-fx effects (Гвоздарев 12 + «9 ефектів»)" gv_effects
 step "step-2 video (graphics_preview.py)" step2_video
 step "precheck cache"                precheck_cache
 cp -f "$TREEL/gfx_preview.mp4" "$OUTD/gfx_preview.mp4" 2>/dev/null
