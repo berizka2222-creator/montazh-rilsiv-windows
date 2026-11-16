@@ -467,9 +467,9 @@ def fx_tap(c, e):
     x = clamp(float(e.o['x']) * c.W if 'x' in e.o else c.fx + c.fw * 1.9, bw / 2 + 30, c.W - bw / 2 - 30)
     y = clamp(float(e.o['y']) * c.H if 'y' in e.o else c.fy + c.fw * 1.6, bh + 30, c.H - bh - 30)
     on = c.lt >= at
-    col = rgb(e.o.get('color'), (124, 92, 255)) if on else (0, 149, 246)
+    col = (239, 239, 239) if on else (0, 149, 246)   # Instagram's own: grey «Відстежується», blue «Стежити» (2026-11-13: real UI, never repainted)
     im = rrect(bw, bh, bh * 0.28, col + (255,)); d = ImageDraw.Draw(im)
-    d.text((bw / 2, bh / 2), 'Following' if on else '+ Follow', font=font('ui', bh * 0.4), fill=(255, 255, 255, 255), anchor='mm')
+    d.text((bw / 2, bh / 2), e.o.get('on_label', 'Відстежується') if on else e.o.get('off_label', 'Стежити'), font=font('ui', bh * 0.4), fill=(0, 0, 0, 255) if on else (255, 255, 255, 255), anchor='mm')
     pop = ease_back(c.lt / 0.3)
     sq = 1.0
     if on: q = (c.lt - at) / 0.3; sq = 1 - 0.12 * math.sin(math.pi * clamp(q)) if q < 1 else 1
@@ -2029,6 +2029,15 @@ def main():
             enc.stdin.write(frame.tobytes())
             if i % int(fps * 5) == 0: print(f'  {t:5.1f}s / {dur:.1f}s', flush=True)
     if enc: enc.stdin.close(); enc.wait(); print('Done:', dst)
+
+
+
+# reel skill: its own effects (rf-*) from reference reels, in a separate file (vendor/vibha-fx/NOTICE.md)
+_rf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rf_fx.py')
+if os.path.exists(_rf): exec(compile(open(_rf, encoding='utf-8').read(), _rf, 'exec'))
+# reel skill: «22 ефекти» (ay-*) from the 2026-11-13 reference reel, in the person's brand: ay_fx.py + scripts/ay/*.py
+_ay = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ay_fx.py')
+if os.path.exists(_ay): exec(compile(open(_ay, encoding='utf-8').read(), _ay, 'exec'))
 
 
 if __name__ == '__main__':

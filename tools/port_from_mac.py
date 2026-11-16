@@ -79,7 +79,7 @@ PATCHES = [
     # ---- docs ----
     ("SKILL.md", "(macOS Vision, ~30 s)", "(OpenCV from ~/reels/.venv, ~30 s)"),
     ("SKILL.md", "`render.sh` only shows a Mac notification", "`render.sh` only shows a Windows notification"),
-    ("SKILL.md", "On an 8 GB Mac keep", "On an 8 GB computer keep"),
+    ("SKILL.md", "**76 s instead of 40+ min** on an 8 GB Mac,", "**76 s instead of 40+ min** on an 8 GB Mac (on Windows the encode runs on an NVIDIA, Intel or AMD video chip, x264 without one; the graphics pass takes about as long as on a Mac),"),
     ("references/review.md", "macOS Vision finds the face on 12 frames", "OpenCV (installed by doctor.sh in ~/reels/.venv) finds the face on 12 frames"),
     ("references/setup-interview.md", '"deliver_dir": "~/Movies/Reels"', '"deliver_dir": "~/Videos/Reels"'),
     ("references/setup-interview.md", "and a recent Mac", "and a recent computer"),
