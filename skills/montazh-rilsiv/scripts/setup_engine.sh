@@ -41,7 +41,7 @@ H="$E/hf"; mkdir -p "$H"
 # the skill's own motions (rf-*, motions/ in this skill): not in the HyperFrames registry, copied in on every setup
 mkdir -p "$H/compositions/components" && cp "$(dirname "$E")/motions/"*.html "$H/compositions/components/" 2>/dev/null || true
 # every motion the catalog marks ready/replace (references/motion_catalog.json), plus the follow card's caption-camera-follow
-MOTIONS="$(python3 -c "import json,sys;print(' '.join(['caption-camera-follow']+[m['name'] for m in json.load(open(sys.argv[1]))['motions'] if m['status']!='skip']))" "$(dirname "$E")/references/motion_catalog.json")"
+MOTIONS="$(python3 -c "import json,sys;print(' '.join(['caption-camera-follow']+[m['name'] for m in json.load(open(sys.argv[1]))['motions'] if m['status']!='skip']))" "$(wp "$(dirname "$E")/references/motion_catalog.json")")"
 for m in $MOTIONS; do
   [ -n "$(find "$H/compositions" -name "$m.html" 2>/dev/null)" ] || (cd "$H" && npx -y hyperframes@0.8.181 add "$m" --no-clipboard >/dev/null 2>&1) || echo "note: couldn't fetch motion $m" >&2
 done

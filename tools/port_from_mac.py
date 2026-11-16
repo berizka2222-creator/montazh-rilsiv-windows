@@ -42,8 +42,7 @@ PATCHES = [
                               '         "/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" \\\n'
                               '         "/c/Program Files/Microsoft/Edge/Application/msedge.exe" \\\n'),
     ("scripts/screenshot.sh", '--screenshot="$OUT"', '--screenshot="$(wp "$OUT")"'),
-    ("scripts/setup_engine.sh", '"$(shasum -a 256 "$E/gsap.min.js.tmp" | cut -d\' \' -f1)"',
-                                '"$({ sha256sum "$E/gsap.min.js.tmp" 2>/dev/null || shasum -a 256 "$E/gsap.min.js.tmp"; } | cut -d\' \' -f1)"'),
+    # setup_engine.sh: the Mac script picks shasum or sha256sum itself since Mac 2026-11-16, no swap needed
     ("scripts/setup_engine.sh", '"$(dirname "$E")/references/motion_catalog.json")"', '"$(wp "$(dirname "$E")/references/motion_catalog.json")")"'),
     ("scripts/doctor.sh", 'command -v ffmpeg >/dev/null && ok "ffmpeg" || no "ffmpeg" "macOS: brew install ffmpeg"',
                           'command -v ffmpeg >/dev/null && ok "ffmpeg" || no "ffmpeg" "winget install -e --id Gyan.FFmpeg"'),

@@ -61,7 +61,7 @@ def fragment(src, start, end, hook=None):
         if (src / "face.json").exists(): shutil.copy(src / "face.json", FRAG / "face.json")
     else:
         sh([sys.executable, str(HERE / "transcribe.py"), str(FRAG / "master.mp4"), str(FRAG / "master_transcript.json")])
-        subprocess.run([sys.executable, str(HERE / "face_box.py"), str(FRAG)])   # macOS only; without it graphics aren't moved off the face
+        subprocess.run([sys.executable, str(HERE / "face_box.py"), str(FRAG)])   # needs OpenCV in ~/reels/.venv; without it graphics use the default face zone
     words = json.load(open(FRAG / "master_transcript.json"))
     info = {"src": str(src), "start": start, "end": end, "dur": round(end - start, 2), "hook": hook,
             "text": " ".join(w["text"] for w in words),
