@@ -13,6 +13,7 @@ Every entry in the catalog was rendered on a real reel with Ukrainian text in th
 marked ready. A motion's "card" block is its tested placement (box / scale / tone); copy it, then set start, end and
 vars (her words). "replace" motions have English text baked in: the "replace" keys listed in the catalog are the exact
 strings to swap for her words."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, subprocess, sys, time
 from pathlib import Path
 
@@ -89,7 +90,7 @@ def menu(moment=None):
             print(f"  {m['name']:26s} {m['ua']}{' · текст через replace' if m['status'] == 'replace' else ''}{flag}")
         if mo == "перехід": print(f"  ! {TR_RULE}")
     if any(m["status"] == "brand" for m in READY) and not moment:
-        print("\n[бренд] = Remotion-елемент: ~/motion/scripts/render-overlay.sh <Element> '<props>' <reel>/overlays/brand-<Element>-<slug>.webm,"
+        print("\n[бренд] = Remotion-елемент: bash ~/motion/scripts/render-overlay.sh <Element> '<props>' <reel>/overlays/brand-<Element>-<slug>.webm,"
               "\n          картка {\"type\": \"overlay\", \"brand\": \"<Element>\", \"src\": ..., \"start\": .., \"end\": ..}")
     full = [m for m in FULL if not moment or any(moment in x for x in m.get("moments", []))]
     if full:

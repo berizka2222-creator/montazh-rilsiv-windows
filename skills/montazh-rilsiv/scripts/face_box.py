@@ -3,6 +3,7 @@
 Usage: python3 face_box.py <reel>   -> writes <reel>/face.json {"box": [x, y, w, h]} in 1080x1920 frame units
 12 frames across raw.*; OpenCV (in ~/reels/.venv) finds the face (+ hair above, chin below); the union of all frames is kept.
 Without OpenCV it falls back to the usual talking-head zone (25%..55% of the height)."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, subprocess, sys, tempfile
 from pathlib import Path
 reel = Path(sys.argv[1]).expanduser()

@@ -9,6 +9,7 @@ words, frames of their reel as the photos), then everything Claude suggests
 (ready / replace / full_only). Clips land in <REELS_HOME>/menu/<name>.mp4 (360x640, a real 24 fps render of ~3-4 s, ~100-200 KB). Upload them to the review
 page (25 per call) and map name -> url in <REELS_HOME>/.motion_previews.json: the page's «Меню ефектів» shows each effect
 on them, with a basket «Мій вибір»."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, glob, json, os, shutil, subprocess, sys
 from pathlib import Path
 

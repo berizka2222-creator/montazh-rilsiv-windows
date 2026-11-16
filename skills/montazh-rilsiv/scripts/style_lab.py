@@ -17,6 +17,7 @@ round.json: {"id", "round", "kind": "directions"|"elements", "style"?: base styl
   "cards"?: [...], "sections": [{"id", "title", "what", "cards"?, "variants": [{"id", "title", "what", "style": {..}, "cards"?}]}]}
   cards are build_reel cards in fragment time; a variant's own cards win over its section's, those over the round's.
   directions: "style" is the whole look; elements: "style" is a patch on the base style (one change)."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 

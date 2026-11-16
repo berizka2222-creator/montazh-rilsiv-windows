@@ -4,6 +4,7 @@ into mountable HyperFrames compositions, so a `motion` card can use them like an
 Usage: python3 wrap_snippets.py [engine/hf/compositions]     rewrites each snippet in place, prints what it did.
 Run it after `npx hyperframes add <name>` of a snippet-style item (the add step prints no data-composition-id for them).
 Snippets without a timeline-integration recipe are left alone (they are listed as "skip")."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import re, sys
 from pathlib import Path
 

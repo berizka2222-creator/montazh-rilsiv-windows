@@ -73,8 +73,6 @@ PATCHES = [
     ("scripts/tighten.py", 'pcm.frombytes(wf.readframes(wf.getnframes()))', 'pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()'),
     # curl.exe gets its arguments in the system code page: a Cyrillic user folder on an English Windows can't be written.
     # Download into the current folder instead (bash itself handles any path)
-    ("scripts/setup_engine.sh", 'curl -fsSL https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js -o "$E/gsap.min.js.tmp"',
-                                '(cd "$E" && curl -fsSL https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js -o gsap.min.js.tmp)'),
     # ---- docs ----
     ("SKILL.md", "(macOS Vision, ~30 s)", "(OpenCV from ~/reels/.venv, ~30 s)"),
     ("SKILL.md", "`render.sh` only shows a Mac notification", "`render.sh` only shows a Windows notification"),

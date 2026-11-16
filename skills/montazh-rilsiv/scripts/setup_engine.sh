@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-time: fetch the animation library and make the sound effects. Re-run safely any time.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 E="$(cd "$(dirname "$0")/.." && pwd)/engine"; mkdir -p "$E/sfx"
 # sha-256 on a Mac (shasum) and on Windows Git Bash / Linux (sha256sum): Windows has no shasum (CI 2026-11-16)
 sha256() { if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1"; else sha256sum "$1"; fi | cut -d' ' -f1; }

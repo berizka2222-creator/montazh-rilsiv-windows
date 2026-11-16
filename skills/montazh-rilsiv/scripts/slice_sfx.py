@@ -4,6 +4,7 @@ Usage: python3 slice_sfx.py <video-or-audio> [names.txt] [--prefix my_] [--gap 0
 Each sound -> ~/reels/assets/sfx/<prefix><name>.wav (48 kHz stereo, 15 ms pre-roll, faded tail, peak -3 dBFS).
 names.txt: one name per line in the order the sounds play («клік мишки» etc.); without it they are numbered.
 Prints every sound with its start time in the recording, so a missing or merged one is easy to spot."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, json, os, re, subprocess
 ap = argparse.ArgumentParser(); ap.add_argument("src"); ap.add_argument("names", nargs="?")
 ap.add_argument("--prefix", default="my_"); ap.add_argument("--gap", type=float, default=0.35); ap.add_argument("--floor", type=float, default=-45)

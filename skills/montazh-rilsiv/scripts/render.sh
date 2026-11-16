@@ -4,6 +4,7 @@
 # Low priority throughout. REEL_DRAFT=1: 540p draft.mp4, 2 Chrome workers (3 above 8 GB). Otherwise final.mp4 at 1080p (--final: the brand
 # resolution, e.g. 4K), 1 worker on an 8 GB Mac.
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 REEL="$(cd "$1" && pwd)"; shift
 FINAL=0; ARGS=(); for a in "$@"; do [ "$a" = "--final" ] && FINAL=1 || ARGS+=("$a"); done
 MEM_GB="$(mem_gb)"; MEM_GB="${MEM_GB:-16}"

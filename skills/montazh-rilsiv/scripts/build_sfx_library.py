@@ -3,6 +3,7 @@
 Usage: python3 build_sfx_library.py <unzipped Kenney packs dir> references/sfx_library.tsv
 Kenney packs (CC0): interface-sounds, ui-audio, impact-sounds, digital-audio, casino-audio from kenney.nl.
 Rows: name, source (pack path | synth:<lavfi> || <filters> | seq:file@sec,...), label, category."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import subprocess, re, sys, os, csv, json
 D, L, LIST = sys.argv[1], os.path.expanduser("~/reels/assets/sfx"), sys.argv[2]
 os.makedirs(L, exist_ok=True)

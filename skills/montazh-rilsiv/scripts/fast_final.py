@@ -24,6 +24,7 @@ Usage: fast_final.py <reel> [--check] [--proj proj_full] [--overlay-only]
   --check          only say whether the fast path applies (exit 0 / 2)
   --overlay-only   render the graphics (overlay.mov) and stop: the draft's background pre-render
 """
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 

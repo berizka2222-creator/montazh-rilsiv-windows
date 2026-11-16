@@ -18,6 +18,7 @@ Every mistake we used to find on a finished draft is visible on one frame or in 
    - everything else: that one card alone on a few seconds of the cut (build_reel + hyperframes snapshot, ~10 s a card).
 Exit code 1 when there is an ERROR. Look at sheet.jpg and fix every card that looks wrong in edit.json (and proposal.json)
 before render.sh: text off the frame, tiny or dim, someone else's words, numbers that aren't theirs, a face covered."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, glob, json, os, re, shutil, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path

@@ -7,6 +7,7 @@
 #  - renders one transparent test element and checks it
 # MOTION_HOME overrides ~/motion (the reel skill's motions.py reads the same variable).
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 SK="$(cd "$(dirname "$0")/.." && pwd)"
 M="${MOTION_HOME:-$HOME/motion}"
 if [ ! -f "$M/package.json" ]; then
@@ -23,7 +24,7 @@ cd "$M"
 [ -d node_modules/@remotion/cli ] || npm ci --no-audit --no-fund --loglevel=error
 python3 scripts/sync-brand.py
 T="$(mktemp -d)/test.webm"
-scripts/render-overlay.sh Counter '{"value":87,"suffix":"%","label":"тест","duration":1.5,"place":"top"}' "$T" >/dev/null
+bash scripts/render-overlay.sh Counter '{"value":87,"suffix":"%","label":"тест","duration":1.5,"place":"top"}' "$T" >/dev/null
 CODEC="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 "$T")"
 [ "$CODEC" = "vp9" ] || { echo "motion test render failed (codec: ${CODEC:-none})" >&2; exit 1; }
 rm -rf "$(dirname "$T")"

@@ -2,6 +2,7 @@
 # Clean a talking-head voice track: light noise removal (DeepFilterNet + gate), de-essing, gentle EQ + compression, two-pass loudness to -14 LUFS.
 # Usage: clean_audio.sh <clip> <out.wav> [--no-denoise]   (noise removal is ON by default: birds, traffic, fans, room hiss)
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 IN="$1"; OUT="$2"; DENOISE="${3:---denoise}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 

@@ -9,6 +9,7 @@ Takes the source, hook and graphic of the style lab fragment (styles/_lab/fragme
 cuts a longer piece of the same clip into styles/_lab/example, renders each saved style with the card recipe of its
 direction (style_lab.directions), and prints the files to upload. Then map the urls into styles/list.json (url, posterUrl)
 and the page's db style/list."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, shutil, subprocess, sys
 from pathlib import Path
 

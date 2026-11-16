@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 # Check everything the reel editor needs and say plainly whether you can edit.
 # Ends with one of: READY · READY WITH LIMITS (works, something optional is missing) · MISSING (fix before editing).
 ok()   { printf '  ✅ %s\n' "$1"; }

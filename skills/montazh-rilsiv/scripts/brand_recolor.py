@@ -9,6 +9,7 @@
 colors: brand.json "colors" ({main, deep?, pop, soft?, light}). Real product UIs (ChatGPT, Claude, iPhone, Instagram) are
 marked "keep_ui" in the catalog and are not recoloured: they have to look like the real thing.
 python3 brand_recolor.py <in.html> <brand.json> [out.html]   recolours a file (for checking by eye)."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import colorsys, json, re, sys
 from collections import Counter
 

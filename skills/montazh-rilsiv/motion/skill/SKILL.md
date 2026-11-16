@@ -16,6 +16,8 @@ Remotion elements, then reused for three things:
 
 Project: `~/motion` (Remotion 4; free for individuals and teams up to 3 people). The workspace is `~/reels` unless
 `REELS_HOME` is set.
+**Windows:** run every `scripts/*.sh` here with `bash` (`bash scripts/render-overlay.sh ...`), and `python`, not `python3`
+(the scripts find the right Python themselves).
 **Their brand, automatically:** `scripts/sync-brand.py` (every render script runs it first) reads `<REELS_HOME>/brand.json`:
 colours → `src/lib/brand.generated.json` (roles: `lime` = main accent for labels, buttons, numbers; `pink` = second accent
 for italic words and strike-through), font files from `<REELS_HOME>/fonts` → `public/fonts`, their own 3D / sticker
@@ -74,7 +76,7 @@ A new element = a file in `src/elements/` + one line in `src/elements/index.ts` 
    Transitions: `slide` (default), `fade`, `wipe`, `cut`. Never three scenes of the same type in a row. 2.5-4 s a scene,
    the hook at least 3 s.
 3. Check stills at the middle of every scene, fix, then `scripts/render.sh MotionReel props/<file>.json out/<name>.mp4`.
-4. Deliver to `~/Movies/Reels` with a clear name. Offer a 4:5 version for the feed / ads when it fits.
+4. Deliver to `~/Videos/Reels` with a clear name. Offer a 4:5 version for the feed / ads when it fits.
 
 `props/demo-reel.json` shows every element once (placeholder text): a quick look at the whole library in their brand.
 

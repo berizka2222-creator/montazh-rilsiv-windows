@@ -1,5 +1,6 @@
 """Pacing presets: how hard the edit trims. One place, so cut.py, tighten.py and the review page agree.
 brand.json "pacing": "natural" (default) | "tight" | "fast". An explicit brand.json "speed" still wins."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 
 PRESETS = {
     # pauses longer than pause_min get shortened, leaving `air` seconds either side of the cut

@@ -61,7 +61,7 @@ Students come here after stage 1 of the course. They already have files about th
 10. **Your usual call to action.** e.g. "comment GUIDE and I'll send it", "follow for part 2". Always at the end?
 11. **Where do you post?** Instagram / TikTok / YouTube Shorts / all.
 12. **CapCut.** "Do you want an editable CapCut version too, so you can tweak captions and sounds yourself?" If yes, explain plainly: it needs a free CapCut account, and the connector currently doesn't work from the United States, and the CapCut app is not available in India. If they're in either place, set `"capcut": false` and reassure them the MP4 route gives the same finished reel.
-13. **Video quality.** 1080p (default, works on any computer) or 4K (sharper, needs ~35 GB free disk and a recent Mac).
+13. **Video quality.** 1080p (default, works on any computer) or 4K (sharper, needs ~35 GB free disk and a recent computer).
 
 ## brand.md - write it in this shape
 
@@ -117,7 +117,7 @@ Students come here after stage 1 of the course. They already have files about th
   "capcut": false,
   "capcut_font": null,
   "sfx": "subtle",
-  "deliver_dir": "~/Movies/Reels",
+  "deliver_dir": "~/Videos/Reels",
   "grade": null,
   "captions": { "mode": "word", "case": "lower", "size": 104, "y": 1250 },
   "fonts": {

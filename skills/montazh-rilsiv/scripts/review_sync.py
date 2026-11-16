@@ -11,6 +11,7 @@ proposal.json (Claude writes this per reel):
    "cards": [{"id","type","kind","what","anchor":"word","after":srcSec,"end_anchor"?,"place":[x,y,w,h], "sfx":{"name","db"}, ...build_reel fields}]}
   A «подача голови» is {"type": "head", "look": ..., "words": [...], "kind": "Подача голови: коло", "place": [0, 0, 1080, 1920],
   "end_anchor": last word of its phrase}: full frame, so the page shows its storyboard still and never moves it off the face."""
+import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
