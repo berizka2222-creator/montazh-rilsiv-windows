@@ -186,6 +186,26 @@ final_fast() {   # 2026-11-16 fast final: the draft started the graphics in the 
   [ -z "$(printf '%s\n' "$q" | grep '^FAIL' | grep -vE '^FAIL: length$')" ]
 }
 step "final (fast path: graphics layer + ffmpeg)" final_fast
+final_fast_simple() {   # a talking-head reel like most: hook, tag, CTA, punch-ins -> must take the fast path (no Chrome video)
+  local F="$REELS_HOME/2026-10-20-тест швидкий"; rm -rf "$F"; mkdir -p "$F"
+  for x in master.mp4 master_540.mp4 master_transcript.json transcript.json edl.json face.json; do [ -e "$REEL/$x" ] && cp "$REEL/$x" "$F/"; done
+  python3 - "$(wp "$REEL")" "$(wp "$F")" <<'PY2'
+import json, sys
+e = json.load(open(sys.argv[1] + "/edit.json", encoding="utf-8"))
+e["cards"] = [{"type": "title", "text": "швидкий / фінал", "start": 0.2, "end": 2.5, "id": "hook"},
+              {"type": "tag", "text": "тест плашки", "start": 3.0, "end": 4.2, "id": "g1"},
+              {"type": "cta", "text": "пиши ТЕСТ", "start": 5.0, "end": 7.0, "id": "cta"}]
+e["punch"] = [0.1, 3.0, 5.5]
+json.dump(e, open(sys.argv[2] + "/edit.json", "w", encoding="utf-8"), ensure_ascii=False)
+PY2
+  REEL_NO_CHECK=1 REEL_DRAFT=1 REEL_PREVIEW=1 bash "$S/render.sh" "$F" > /dev/null 2>&1 || return 1
+  local o; o="$(REEL_NO_CHECK=1 bash "$S/render.sh" "$F" 2>&1)"; local rc=$?; echo "$o" | grep -vE 'initSession|INFO' | tail -12; [ $rc = 0 ] || return $rc
+  cat "$F/prerender.log" 2>/dev/null | tail -3
+  printf '%s\n' "$o" | grep -F "fast final: compose" || return 1      # really the fast path, not the fallback
+  local q; q="$(python3 "$S/qa.py" "$(wp "$F")" 2>&1)"; echo "$q"
+  [ -z "$(printf '%s\n' "$q" | grep '^FAIL' | grep -vE '^FAIL: length$')" ]
+}
+step "final, simple reel (must take the fast path)" final_fast_simple
 step "render_queue (locks)"          queue
 step "deliver.sh"                    bash "$S/deliver.sh" "$REEL/draft.mp4" "Тест рілс"
 step "motions.py log"                py "$S/motions.py" log "$(wp "$REEL")"
