@@ -7,7 +7,6 @@ Usage: graphics_preview.py <reel> <review.json>     -> import, cut, precheck, th
        graphics_preview.py <reel> <review.json> --checked  -> after you looked at the sheet and fixed it: the render
        -> <reel>/gfx_preview.mp4 + <reel>/gfx_preview.json (the db doc)
 A hook with no text yet (she hasn't picked A/B/C) stays out of the picture: the page draws it live."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, shutil, subprocess, sys, time
 from pathlib import Path
 S = Path(__file__).resolve().parent

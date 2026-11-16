@@ -4,8 +4,8 @@
   reference.py <url> [<out dir>] [--transcribe]
 
 1. Downloads with yt-dlp. Instagram often refuses anonymous downloads: then it retries with the login of the browser the
-   person uses (Chrome, then Edge, then Firefox: `--cookies-from-browser`; Chrome and Edge keep the login file locked
-   while they are open, so if those fail ask them to close the browser for a moment, or use Firefox). It only reads the post. If every way fails it exits 2: look at the reel in their browser
+   person uses (Chrome, then Safari: `--cookies-from-browser`; macOS may ask once for the Mac password to read Chrome's
+   login, «Дозволити завжди»). It only reads the post. If every way fails it exits 2: look at the reel in their browser
    instead (Claude in Chrome: seek the video and grab frames) or ask for a screen recording.
 2. Writes <out>/ref.mp4, info.json (author, caption, duration), cuts.json (every shot change and the average shot length)
    and contact sheets sheet_00.jpg… (one frame every 1.5 s, 12 per sheet, time-stamped in the file name order), plus
@@ -14,7 +14,6 @@
 Then read the sheets and name the techniques (hook type and length, caption style, cut pace, zooms, graphics and their
 moments, transitions, sound) and map each to this skill's tools: `motions.py menu`, caption styles, camera moves, template
 cards (references/reference.md)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, json, re, shutil, subprocess, sys
 from pathlib import Path
 
@@ -24,21 +23,17 @@ A = ap.parse_args()
 slug = re.sub(r"[^A-Za-z0-9_-]", "", A.url.rstrip("/").split("/")[-1].split("?")[0])[:40] or "ref"
 out = Path(A.out or f"~/reels/_refs/{slug}").expanduser().resolve(); out.mkdir(parents=True, exist_ok=True)
 SK = Path(__file__).resolve().parent.parent
-if not shutil.which("yt-dlp") and subprocess.run([sys.executable, "-c", "import yt_dlp"], capture_output=True).returncode:
-    print("one-time: installing yt-dlp (pip)", flush=True)   # Windows has no yt-dlp by default
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--user", "-U", "yt-dlp"])
-YTDLP = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
 
 def dl(extra):
-    try:   # never hang on a browser login: two minutes at most
-        r = subprocess.run([*YTDLP, "-q", "--no-warnings", "--no-playlist", "-f", "mp4/best", "--write-info-json", "-o", str(out / "ref.%(ext)s"), *extra, A.url],
+    try:   # with a browser login macOS may wait for the Mac password in a dialog: give them two minutes, never hang
+        r = subprocess.run(["yt-dlp", "-q", "--no-warnings", "--no-playlist", "-f", "mp4/best", "--write-info-json", "-o", str(out / "ref.%(ext)s"), *extra, A.url],
                            capture_output=True, text=True, timeout=180)
     except subprocess.TimeoutExpired:
-        return False, ["timed out waiting for the download"]
+        return False, ["timed out waiting (the Mac password dialog for the browser login was not answered)"]
     return r.returncode == 0 and any(out.glob("ref.mp4")), (r.stderr or "").strip().splitlines()[-1:] or [""]
 if not (out / "ref.mp4").exists():
     ok, err = dl([])
-    for browser in ("chrome", "edge", "firefox"):
+    for browser in ("chrome", "safari"):
         if ok: break
         print(f"plain download refused ({err[0][:90]}); trying with the {browser} login…", flush=True)
         ok, err = dl(["--cookies-from-browser", browser])

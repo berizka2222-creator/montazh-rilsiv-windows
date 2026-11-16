@@ -3,7 +3,6 @@
 # On a Mac the media engine decodes and encodes (a 3 min 4K clip in ~1 min, not ~4 with libx264).
 # Usage: page_proxy.sh <video> <audio or -> <out.mp4>      ("-" keeps the video's own sound)
 set -euo pipefail
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 V="$1"; A="$2"; OUT="$3"
 DUR="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$V")"
 # 18.5 MB budget: audio 96 kbps, the rest video, never above 1.2 Mbps

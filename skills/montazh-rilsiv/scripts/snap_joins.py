@@ -3,7 +3,6 @@
 Transcript word times are never exact; the gap between two words is where the voice actually drops.
 Usage: python3 snap_joins.py <reel-folder> [--window 0.3]
 Run after edl.json exists (review_sync import or a hand-written edl) and before cut.py."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import array, json, math, subprocess, sys, tempfile, wave
 from pathlib import Path
 
@@ -15,7 +14,7 @@ audio = reel / edl.get("audio", "voice.wav")
 with tempfile.TemporaryDirectory() as tmp:
     wav = Path(tmp) / "a.wav"
     subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(audio), "-ac", "1", "-ar", "16000", str(wav)], check=True)
-    w = wave.open(str(wav)); sr = w.getframerate(); pcm = array.array("h"); pcm.frombytes(w.readframes(w.getnframes())); w.close()
+    w = wave.open(str(wav)); sr = w.getframerate(); pcm = array.array("h"); pcm.frombytes(w.readframes(w.getnframes()))
 dur = len(pcm) / sr
 
 def db(t, n=0.03):   # level of the n seconds starting at t

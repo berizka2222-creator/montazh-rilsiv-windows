@@ -6,8 +6,7 @@ prints `REFERENCE: <url>`). Take its techniques, never its content: their words,
 1. `python3 scripts/reference.py <url> [<out>] --transcribe` → `ref.mp4`, `info.json` (author, caption), `cuts.json` (shot
    changes, average shot length), `sheet_NN.jpg` (a frame every 1.5 s, 12 per sheet: sheet k = seconds 18(k-1)..18k),
    `cut_<t>.jpg` at every shot change, `transcript.json`. Instagram refuses anonymous downloads: the script retries with
-   the Chrome, then the Edge, then the Firefox login (it only reads the post; Chrome and Edge must be closed for a moment
-   if their login can't be read). No yt-dlp on the computer: the script installs it with pip once.
+   the Chrome, then the Safari login (macOS asks once for the Mac password: «Дозволити завжди»; it only reads the post).
    Exit 2 = no way in: look at it in their browser (Claude in Chrome: seek the `<video>`, grab frames) or ask for a screen
    recording.
 2. Read every sheet and the transcript. Write down, with the second it happens:

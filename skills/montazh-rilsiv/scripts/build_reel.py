@@ -65,7 +65,6 @@ edit.json (written by auto_edit.py, then Claude marks accents and adds cards):
   (brand overrides, allowed list looks and camera moves, rejected types, motion speed, caption entrance + accent look, sounds per event).
   Image paths: relative to the reel folder, or to ~/reels/assets/, or absolute.
 """
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import base64, hashlib, html, json, os, re, shutil, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand_recolor

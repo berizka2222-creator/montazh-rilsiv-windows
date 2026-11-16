@@ -2,7 +2,6 @@
 """Draft edit.json from the cut master's transcript: captions chunked in the brand's caption mode and punch-ins on a
 steady rhythm. Claude then only marks accent words and adds 3-6 cards - no design work.
 Usage: python3 auto_edit.py <reel-folder>     (needs <reel-folder>/master_transcript.json; see SKILL.md step 5)"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))

@@ -10,7 +10,6 @@ Only the seconds with an effect are processed (effects that overlap go through t
 cached by its settings, and the pieces are laid over master.mp4 into master_fx.mp4 (master_fx_540.mp4 for drafts), which
 build_reel.py then uses as the video under the captions and graphics. The effects are drawn in the brand's fonts (hers have
 no Cyrillic) and accent colours; real interfaces in them (Instagram comment, iPhone toggles) keep their own look."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import hashlib, json, os, shutil, subprocess, sys
 from pathlib import Path
 

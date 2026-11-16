@@ -16,7 +16,6 @@ draft (the motion from 1.0 to 4.0 s, Ukrainian sample text, the catalog's tested
                    review page (upload them as page assets, map name -> url in <REELS_HOME>/.motion_previews.json).
 Already done items are skipped, so a run can be stopped and resumed. Two workers is the most an 8 GB Mac takes.
 Verdicts go into references/motion_catalog.json by hand (status, card placement, replace, note): see references/motions.md."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, glob, json, os, re, shutil, statistics, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path

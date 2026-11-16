@@ -8,7 +8,6 @@ private. The reel is about to be public on Instagram anyway, so it goes to litte
 itself), and nothing has to be set up. Only after she pressed «Опублікувати в Instagram» and confirmed the account and
 caption in chat. Then: get_instagram_accounts -> publish_instagram_media(media_type="REELS", video_url, caption, cover_url,
 share_to_feed=true, skip_if_recently_published=true) -> write the permalink to builds/latest "published"."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, subprocess, sys
 from pathlib import Path
 

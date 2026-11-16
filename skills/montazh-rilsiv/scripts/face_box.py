@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Where the face sits in the clip, so graphics and captions keep off it.
 Usage: python3 face_box.py <reel>   -> writes <reel>/face.json {"box": [x, y, w, h]} in 1080x1920 frame units
-12 frames across raw.*; OpenCV (in ~/reels/.venv) finds the face (+ hair above, chin below); the union of all frames is kept.
-Without OpenCV it falls back to the usual talking-head zone (25%..55% of the height)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
+12 frames across raw.*; macOS Vision finds the face (+ hair above, chin below); the union of all frames is kept.
+Without macOS/swift it falls back to the usual talking-head zone (25%..55% of the height)."""
 import json, subprocess, sys, tempfile
 from pathlib import Path
 reel = Path(sys.argv[1]).expanduser()
@@ -18,7 +17,7 @@ with tempfile.TemporaryDirectory() as d:
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.2f}", "-i", str(src), "-frames:v", "1", "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}", f], check=True)
         imgs.append(f)
     try:
-        out = subprocess.run([sys.executable, str(Path(__file__).with_name("face_box_cv.py")), *imgs], capture_output=True, text=True, timeout=300).stdout.split("\n")
+        out = subprocess.run(["swift", str(Path(__file__).with_name("face_box.swift")), *imgs], capture_output=True, text=True, timeout=300).stdout.split("\n")
         faces = [list(map(float, l.split())) for l in out if l.strip() and l.strip() != "none"]
     except Exception as e:
         faces = []; print("face detection unavailable:", e)

@@ -2,7 +2,6 @@
 """Apply the approved rough cut: keep spans from edl.json (in play order), speed up, optional colour grade, scale to the
 brand resolution. Writes master.mp4 in the reel folder.
 Usage: python3 cut.py <reel-folder>      (reads <reel-folder>/edl.json and ~/reels/brand.json)"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, subprocess, sys
 from pathlib import Path
 

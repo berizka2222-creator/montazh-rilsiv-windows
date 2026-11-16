@@ -2,7 +2,6 @@
 # Make the upload copy: same resolution, high-bitrate H.264, fast-start, saved to the brand's delivery folder.
 # Usage: deliver.sh <final.mp4> "<clear name>"
 set -euo pipefail
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 SRC="$1"; NAME="${2:-$(basename "${SRC%.*}")}"
 BRAND="$(wp "${REELS_HOME:-$HOME/reels}/brand.json")"
 DIR="$(python3 -c "import json,os;print(os.path.expanduser(json.load(open('$BRAND')).get('deliver_dir','~/Videos/Reels')))")"

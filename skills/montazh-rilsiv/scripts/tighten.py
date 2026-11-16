@@ -6,7 +6,6 @@ Usage: python3 tighten.py <reel-folder>
 
 How: fillers are the hesitation words in the Scribe transcript (transcript.json). Pauses come from silencedetect on the cleaned voice. Every cut edge keeps the preset's
 air (50-150 ms) so words never clip."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
@@ -44,7 +43,7 @@ if DETECT: sys.exit(0 if found else 3)
 # 2. pauses, via silencedetect on the cleaned voice. The threshold sits just above THIS clip's background noise
 #    (outdoor or noisy rooms never reach a fixed -40 dB, so a fixed threshold finds nothing).
 import array, math, wave
-wf = wave.open(str(voice)); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()
+wf = wave.open(str(voice)); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes()))
 hop = int(sr * 0.05)
 lev = sorted(20 * math.log10(max(1.0, math.sqrt(sum(x * x for x in pcm[i:i + hop:4]) / (hop / 4))) / 32768)
              for i in range(0, len(pcm) - hop, hop))

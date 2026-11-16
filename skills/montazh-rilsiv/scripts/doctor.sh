@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 # Check everything the reel editor needs and say plainly whether you can edit.
 # Ends with one of: READY · READY WITH LIMITS (works, something optional is missing) · MISSING (fix before editing).
 ok()   { printf '  ✅ %s\n' "$1"; }
@@ -8,10 +7,10 @@ no()   { printf '  ❌ %s\n     fix: %s\n' "$1" "$2"; MISSING=1; }
 MISSING=0; LIMITS=0
 echo "Reel editor check"
 
-command -v ffmpeg >/dev/null && ok "ffmpeg" || no "ffmpeg" "winget install -e --id Gyan.FFmpeg"
-command -v node >/dev/null && ok "Node.js $(node -v)" || no "Node.js" "winget install -e --id OpenJS.NodeJS.LTS"
-[ -n "${PY:-}" ] && ok "Python 3 ($PY)" || no "Python 3" "winget install -e --id Python.Python.3.12 --scope user"
-case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) ok "Windows (Git Bash)";; *) warn "not Windows" "this is the Windows version of the skill: on a Mac install montazh-rilsiv instead";; esac
+command -v ffmpeg >/dev/null && ok "ffmpeg" || no "ffmpeg" "macOS: brew install ffmpeg"
+command -v node >/dev/null && ok "Node.js $(node -v)" || no "Node.js" "install the LTS version from https://nodejs.org"
+command -v python3 >/dev/null && ok "Python 3" || no "Python 3" "macOS: xcode-select --install"
+[ "$(uname)" = "Darwin" ] || warn "not macOS" "macOS is the tested platform; Windows and Linux are untested"
 
 HF=0; for d in ~/.claude/skills/hyperframes ~/.agents/skills/hyperframes; do [ -d "$d" ] && HF=1; done   # either location is fine
 [ "$HF" = 1 ] && ok "HyperFrames skills" || no "HyperFrames skills" "npx skills add heygen-com/hyperframes"
@@ -31,7 +30,7 @@ HOME_DIR="${REELS_HOME:-$HOME/reels}"
 if [ -f "$HOME_DIR/brand.json" ]; then
   ok "brand file ($HOME_DIR)"
   # every font the brand names must exist, or captions silently fall back to a system font
-  python3 - "$(wp "$HOME_DIR/brand.json")" <<'PY' || LIMITS=1
+  python3 - "$HOME_DIR/brand.json" <<'PY' || LIMITS=1
 import json, os, sys
 b = json.load(open(sys.argv[1])); bad = 0
 for role, f in (b.get("fonts") or {}).items():
@@ -41,7 +40,7 @@ for role, f in (b.get("fonts") or {}).items():
     elif p: print(f"  ✅ {role} font ({f.get('family')})")
 sys.exit(bad)
 PY
-  if python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('capcut') else 1)" "$(wp "$HOME_DIR/brand.json")"; then
+  if python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('capcut') else 1)" "$HOME_DIR/brand.json"; then
     [ -d "${CAPCUT_SKILLS_DIR:-$HOME/reels/capcut/plugins/codex/skills}/capcut-stdraft-builder" ] && ok "CapCut helper scripts" \
       || warn "CapCut helper scripts not found" "the MP4 still works; for CapCut see references/capcut.md step 3"
     claude mcp list 2>/dev/null | grep -q capcut_creation && ok "CapCut connector added" \
@@ -53,10 +52,10 @@ fi
 echo "  ℹ️  the review page needs Claude Code's Artifact tools; Claude checks this when you start an edit (chat review otherwise)"
 
 # text widths are measured in the real fonts (fontTools in ~/reels/.venv), so wide display fonts never spill out of the frame
-VENV="${REELS_HOME:-$HOME/reels}/.venv"; VPY="$VENV/Scripts/python.exe"
-if [ -x "$VPY" ] && "$VPY" -c "import fontTools, brotli, cv2" 2>/dev/null; then ok "font measuring + face finding (fontTools, OpenCV)"
-elif { [ -x "$VPY" ] || python3 -m venv "$(wp "$VENV")" >/dev/null 2>&1; } && "$VPY" -m pip install -q fonttools brotli Pillow opencv-python-headless >/dev/null 2>&1; then ok "font measuring + face finding installed in $VENV"
-else warn "fontTools/OpenCV not installed" "text sizes fall back to an estimate and graphics use the default face zone; run: python -m venv ~/reels/.venv && ~/reels/.venv/Scripts/python.exe -m pip install fonttools brotli Pillow opencv-python-headless"; fi
+VENV="${REELS_HOME:-$HOME/reels}/.venv"
+if [ -x "$VENV/bin/python" ] && "$VENV/bin/python" -c "import fontTools, brotli" 2>/dev/null; then ok "font measuring (fontTools)"
+elif python3 -m venv "$VENV" >/dev/null 2>&1 && "$VENV/bin/pip" install -q fonttools brotli Pillow >/dev/null 2>&1; then ok "font measuring (fontTools) installed in $VENV"
+else warn "fontTools not installed" "text sizes fall back to an estimate; run: python3 -m venv ~/reels/.venv && ~/reels/.venv/bin/pip install fonttools brotli Pillow"; fi
 
 # the Remotion motion library in their brand (scripts/setup_motion.sh): brand elements, motion reels, site animations
 MH="${MOTION_HOME:-$HOME/motion}"

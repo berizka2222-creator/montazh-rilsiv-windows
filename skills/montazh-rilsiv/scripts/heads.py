@@ -12,7 +12,6 @@ Card fields (edit.json):
   brackets  false: no [ ] around the words in cloud / top / around
 Every look keeps the face in its window, takes over the whole frame for its seconds (captions step aside, the card carries
 the words) and hands the frame back at its end. Tested placements: references/motions.md «Подачі голови»."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, re
 
 W, H = 1080, 1920

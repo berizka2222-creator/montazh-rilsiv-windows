@@ -11,7 +11,6 @@ Upload the pv/ files (Artifact asset: true, file_paths), then write reel/current
 url, poster?, kind: "image"|"video", label, source, license, file}]}. Never pick for her: every option goes on the page.
 Memes: the options are templates; she picks one and types HER text on the page (finds[i].memeText), then
 find_media.py meme --id <template> --text "<her text>" --into <request id> makes the picture that goes in."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, subprocess, sys
 from pathlib import Path
 

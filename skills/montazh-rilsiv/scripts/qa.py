@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """QA gate for a finished reel. Checks size, length, loudness, and (if expected.txt exists) that no words were lost.
 Usage: python3 qa.py <reel-folder> [video]     default video: final.mp4. Exit code 1 if anything fails."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import difflib, json, os, re, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))

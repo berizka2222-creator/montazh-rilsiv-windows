@@ -15,7 +15,6 @@ Files land in <reel>/finds/ with finds/finds.json (file, kind, source, author, p
 them as options and the credits stay with the reel. Keys live in ~/.config/reels/.env (PIXABAY_API_KEY or PEXELS_API_KEY, GIPHY_API_KEY);
 a missing key exits with code 2 and says how to add it (scripts/set_key.sh). Imgflip needs no key.
 Licences: Pixabay / Pexels = free for commercial use; GIPHY = organic only; meme templates = organic only (no ads)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, json, os, re, sys, urllib.parse, urllib.request
 from pathlib import Path
 

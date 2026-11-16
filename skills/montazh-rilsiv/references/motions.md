@@ -280,7 +280,7 @@ review page's «Тільки вручну» list. Two workers at most on an 8 GB
 composition), then test it before using it in a reel: one card on a short test reel, `REEL_DRAFT=1 python3 build_reel.py`,
 `npx hyperframes@0.8.145 snapshot proj --at <t>`, look at the frame. Add it to `motion_catalog.json` with its moment, `ua`
 line, tested `card` and status. Skip ones whose text is English with no field to change it, ones with another brand's look
-baked in, and 3D/WebGPU shaders (slow on an 8 GB computer). The 88 already rejected are in the catalog as `skip` with the reason.
+baked in, and 3D/WebGPU shaders (slow on an 8 GB Mac). The 88 already rejected are in the catalog as `skip` with the reason.
 
 ## Captions next to a motion
 

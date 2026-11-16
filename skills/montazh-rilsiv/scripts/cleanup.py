@@ -7,7 +7,6 @@ Kept: raw.* (the untouched source), final.mp4, cover.* (cover for Instagram).
 Everything else (drafts, master, proxies, logs, page, proj, caches, work folders) goes to the macOS Trash,
 so it can still be restored from there. Refuses to run if final.mp4 is missing or not a playable video.
 """
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import shutil, subprocess, sys, time
 from pathlib import Path
 

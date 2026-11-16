@@ -2,7 +2,6 @@
 # Screenshot a website for a "shot" card (e.g. the homepage of a tool you mention). ~5-10 s.
 # Usage: screenshot.sh <url> <out.png>
 set -euo pipefail
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 URL="$1"; OUT="$2"
 for c in "/c/Program Files/Google/Chrome/Application/chrome.exe" \
          "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" \

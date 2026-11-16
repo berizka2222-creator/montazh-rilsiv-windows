@@ -3,7 +3,6 @@
 build_reel.py records where every graphic and caption sits and calls check(); the result goes to <reel>/safezones.json,
 which qa.py prints. Warnings only: a full-screen takeover is meant to cover everything.
 Usage: python3 safezones.py <reel-folder>     print the last check"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, re, sys
 from pathlib import Path
 

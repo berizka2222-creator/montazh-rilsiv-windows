@@ -8,7 +8,6 @@ Usage: python3 inserts.py <reel> [--fetch]
   reads  <reel>/master_transcript.json (falls back to transcript.json)
   writes <reel>/inserts.json, prints one line per phrase
   --fetch downloads logos to <reel>/logos/<slug>.svg and screenshots to <reel>/shots/<slug>.png"""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, re, subprocess, sys, urllib.request
 from pathlib import Path
 

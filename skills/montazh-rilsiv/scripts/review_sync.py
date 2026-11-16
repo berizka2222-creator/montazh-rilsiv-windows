@@ -11,7 +11,6 @@ proposal.json (Claude writes this per reel):
    "cards": [{"id","type","kind","what","anchor":"word","after":srcSec,"end_anchor"?,"place":[x,y,w,h], "sfx":{"name","db"}, ...build_reel fields}]}
   A «подача голови» is {"type": "head", "look": ..., "words": [...], "kind": "Подача голови: коло", "place": [0, 0, 1080, 1920],
   "end_anchor": last word of its phrase}: full frame, so the page shows its storyboard still and never moves it off the face."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -121,7 +120,7 @@ def export(reel, proposal, out):
     # Transcript word times run back to back, hiding pauses. Measure real silences in the cleaned voice (threshold just
     # above this clip's noise floor) and pull word edges back to them, so pauses show up as gaps the review can trim.
     import array, math, wave
-    wf = wave.open(str(reel / "voice.wav")); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes())); wf.close()
+    wf = wave.open(str(reel / "voice.wav")); sr = wf.getframerate(); pcm = array.array("h"); pcm.frombytes(wf.readframes(wf.getnframes()))
     hop = int(sr * 0.05)
     lev = sorted(20 * math.log10(max(1.0, math.sqrt(sum(x * x for x in pcm[i:i + hop:4]) / (hop / 4))) / 32768) for i in range(0, len(pcm) - hop, hop))
     thresh = min(lev[len(lev) // 10] + 5, -20)

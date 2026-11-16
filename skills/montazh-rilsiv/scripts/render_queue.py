@@ -8,7 +8,6 @@ Usage:
   render_queue.py status                                      what is rendering and what waits
 Every finished render appends a line to <queue>/done.log:  <time> DONE|FAIL <reel> <seconds>s
 Watch that file to upload each draft as soon as it is ready. Queue folder: $REELS_HOME/.queue (default ~/reels/.queue)."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import fcntl, json, os, subprocess, sys, time
 from pathlib import Path
 

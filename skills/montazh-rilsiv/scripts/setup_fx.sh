@@ -2,7 +2,6 @@
 # One-time: Python for the video effects (vendor/vibha-fx + vendor/gv-fx): numpy, OpenCV, Pillow, MediaPipe, rembg in their own .venv.
 # MediaPipe needs Python 3.10-3.12, so the skill's usual Python is not used. Safe to re-run: prints READY when set.
 set -e
-source "$(dirname "${BASH_SOURCE[0]}")/_win.sh"
 D="$(cd "$(dirname "$0")/../vendor/vibha-fx" && pwd)"; cd "$D"
 VPY=".venv/bin/python"; [ -x "$VPY" ] || VPY=".venv/Scripts/python.exe"
 if [ -x "$VPY" ] && "$VPY" -c "import mediapipe, cv2, PIL, numpy, fontTools, rembg" 2>/dev/null; then echo READY; exit 0; fi

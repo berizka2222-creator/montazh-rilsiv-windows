@@ -8,7 +8,6 @@ video around it, puts that one card on it with build_reel (brand colours, fonts,
 snapshots its peak: <out>/story_<id>.jpg (540x960), <out>/hook_<n>.jpg for the hook options. No full render: ~10 s a card.
 Upload them to the page and set each board item's "storyUrl" and each "hookOptions" item's "img" in reel/current: the
 «Графіка» tab then shows the real look instead of a frame with a text box, and the hook as pictures to pick from."""
-import os as _os, sys as _sys; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); import _win  # noqa: E402,F401  Windows layer (scripts/_win.py)
 import argparse, glob, json, os, shutil, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
