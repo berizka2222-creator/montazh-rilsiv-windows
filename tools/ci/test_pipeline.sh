@@ -177,6 +177,15 @@ qa_draft() {   # the draft is 540x960 on purpose and only the final gets the -14
 }
 step "qa.py on draft"                qa_draft
 step "frames from draft"             frames
+final_fast() {   # 2026-11-16 fast final: the draft started the graphics in the background; the final only composes
+  local P; [ -f "$REEL/.prerender.pid" ] && P="$(cat "$REEL/.prerender.pid")" && while kill -0 "$P" 2>/dev/null; do sleep 2; done
+  cat "$REEL/prerender.log" 2>/dev/null | tail -5
+  local o; o="$(bash "$S/render.sh" "$REEL" 2>&1)"; local rc=$?; echo "$o" | grep -vE 'initSession|INFO' | tail -15; [ $rc = 0 ] || return $rc
+  printf '%s\n' "$o" | grep -E 'fast final: (encoder|compose|not for this reel)' || return 1
+  local q; q="$(python3 "$S/qa.py" "$(wp "$REEL")" 2>&1)"; echo "$q"
+  [ -z "$(printf '%s\n' "$q" | grep '^FAIL' | grep -vE '^FAIL: length$')" ]
+}
+step "final (fast path: graphics layer + ffmpeg)" final_fast
 step "render_queue (locks)"          queue
 step "deliver.sh"                    bash "$S/deliver.sh" "$REEL/draft.mp4" "Тест рілс"
 step "motions.py log"                py "$S/motions.py" log "$(wp "$REEL")"
