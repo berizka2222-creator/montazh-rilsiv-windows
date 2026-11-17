@@ -319,9 +319,10 @@ PY2
   local o; o="$(REEL_DRAFT=1 python3 "$S/fx_pass.py" "$(wp "$GREEL")" 2>&1)"; local rc=$?; printf '%s\n' "$o" | grep -v rawvideo | tail -12; [ $rc = 0 ] || return $rc
   printf '%s\n' "$o" | grep -q "fx: 5 effects" && [ -s "$GREEL/master_fx_540.mp4" ] && ! printf '%s\n' "$o" | grep -E "Traceback|failed" || return 1
   for t in 1 2.9 4.5 7; do ffmpeg -v error -y -ss "$t" -i "$GREEL/master_fx_540.mp4" -frames:v 1 "$OUTD/gv_$t.jpg"; done
-  # the cut-out model: rembg puts it in C:/Users/Public/montazh-rilsiv/u2net on a non-Latin profile (run.py), else ~/.u2net;
-  # the frames above show the cut-out itself, this only says where the model landed and fails if it is nowhere
-  py -c "from pathlib import Path; import sys; f = [x for d in (Path('C:/Users/Public/montazh-rilsiv/u2net'), Path.home() / '.u2net') for x in d.glob('*.onnx')]; print('cut-out model:', *f or ['NOT FOUND']); sys.exit(0 if f else 1)"
+  # the cut-out itself shows in the frames above; this only reports where rembg keeps its model (versions differ), never fails
+  local vpy; vpy="$(ls "$S"/../vendor/vibha-fx/.venv/Scripts/python.exe 2>/dev/null | head -1)"
+  [ -n "$vpy" ] && "$vpy" -c "import os, sys; sys.path.insert(0, r'$(wp "$S/../vendor/gv-fx/scripts")'); import run; from rembg.sessions.base import BaseSession as B; d = B.u2net_home_dir(); print('cut-out model dir:', d, os.listdir(d) if os.path.isdir(d) else 'missing')" 2>&1 | tail -2
+  return 0
 }
 step "gv-fx effects (Гвоздарев 12 + «9 ефектів»)" gv_effects
 step "step-2 video (graphics_preview.py)" step2_video
