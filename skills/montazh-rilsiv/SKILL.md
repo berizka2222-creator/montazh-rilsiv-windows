@@ -20,6 +20,7 @@ The workspace is `~/reels/` unless `REELS_HOME` is set.
 
 Their editing style lives in `~/reels/styles/<name>.json` + `STYLE.md`, built in rounds on the review page's «Стиль» tab (`references/style-lab.md`, `scripts/style_lab.py`). Several styles per account are normal.
 - **No styles yet** → offer the style lab once («Зберемо твій стиль монтажу? 9 варіантів на 5 секундах твого відео»); a no means brand.json alone, as before.
+- **More directions for the lab:** `references/ghost-styles.md` (18 whole-reel looks from ghost-editor: TV news, data on paper, whiteboard, telestrator, Swiss grid, dossier...). When they want «щось нове» or name a look, build a variant from one of them: its pattern, their colours and fonts.
 - **One style** → use it. **Several** → she picks it on the review page's «Графіка» tab («Стиль монтажу», before «Готово → Claude»); `review_sync.py import` prints `STYLE:` and writes `<reel>/style.txt` + edit.json `"style"`. Plan your graphics proposals in that style (read `style.txt` or her review doc's `style` before writing proposal.json). Not picked on the page: ask «Яким стилем монтуємо?» in chat (or use brand.json `"style"` as the default) and write the name to `<reel>/style.txt`. Read that style's `STYLE.md` section before planning graphics: its Відхилено list is a hard no.
 - Never use someone else's style for a person: a student's styles come from their own rounds.
 - **Two picks with no style file** (page buttons under the styles; `style.txt` holds the word):
@@ -61,6 +62,7 @@ Each reel gets its own folder: `~/reels/<yyyy-mm-dd>-<short-name>/`. Copy the ra
 2. **Clean the voice** - `bash scripts/clean_audio.sh <clip> voice.wav` (add `--denoise` if there is background noise). Targets -14 LUFS, the level Instagram and TikTok expect.
 **Face zone:** `python3 scripts/face_box.py <folder>` (OpenCV from ~/reels/.venv, ~30 s) before the review export, so graphics and captions keep off the face (see «Face, captions and «За мною»» in references/review.md).
 3. **Review (their call)** - propose: lines to cut (repeats, false starts, rambles), fillers to drop, CTA moved to the end, target under 60 s, and the graphics plan. **Wait for their yes before cutting.** This is the step people care most about. Read `references/hook-rhythm.md` first: which of their lines opens the reel (hook types), the arc, the length, and the rhythm the graphics plan follows.
+   **Several takes («скажу ще раз», false starts, the text read twice):** when the transcript says lines more than once, `python3 scripts/takes.py <folder> [--script script.txt]` (a script they send goes to `<folder>/script.txt`). It finds every attempt of every sentence, picks the complete one with fewer stumbles, fillers and inner restarts (no gaze check on Windows), later over earlier, and prints `PROPOSED_CUT:`: use it as proposal.json `"proposedCut"`. In the review show them the table in one line per sentence («речення 3: обрав 2-й дубль, у 1-му «ем»»); they can switch to another take on «Нарізка». A look-away they do on purpose (shows a product) is not a fault. Rules after ghost-editor (MIT, github.com/kurbaitaev/ghost-editor).
    **Look at the start and end before proposing cuts:** grab a frame every 0.5 s for the first and last 4 s. Cut any camera setup (pointing at the floor/garden, flipping the camera, reaching for the phone) even if words are spoken over it. Start on the first frame where they're settled in shot, and on a word that works as an opener.
    - **Main path: the Reel Review page.** ALWAYS run a tool search for `Artifact` and `ArtifactData` first (they are usually deferred and only appear after the search). Never decide they are missing without searching. If they do, follow `references/review.md`: they tap words to cut, watch the live rough cut, check graphics, captions, sound and colour, then say "build preview". Its import step writes `edl.json` + `edit.json`, so skip to step 4's cut and step 5.4's render.
    - **Step 2 («графіка»): video first.** Plan every effect locally (`proposal.json` → `export`), render the cut WITH them (`scripts/graphics_preview.py`), and only then write the board, the video (`builds/cut`, `rendered: true`) and `claudeRound` +1 to the page in one batch: no effect blocks on their page before the finished video. `reel/current` on round 1 always has `claudeRound: 0` (export writes it; never copy it from an older reel), and a «Зібрати чернетку» that arrives with no rendered step-2 video is a step-1 press: do round 2 first.
@@ -109,10 +111,14 @@ Each reel gets its own folder: `~/reels/<yyyy-mm-dd>-<short-name>/`. Copy the ra
 
 Tell them what changed, and what to check by ear (cuts, names, brand words spelled right).
 
+## Fix the footage (after ffmpeg-skill, MIT)
+- **Sound from a separate mic:** `python scripts/sync_audio.py <camera clip> <mic file> --check`, then without `--check` with `-o <reel>/raw.mov` (camera file kept as `raw-camera.<ext>`). Fixes clock drift on long takes.
+
 ## Reference reel («зроби як тут»)
 When they send a reel link they like (chat or the review page's «Рілс-референс»), follow `references/reference.md`:
 `scripts/reference.py` downloads it (with their browser login when Instagram refuses), measures the pace and lays out the
 frames; name its techniques and map them to this skill's motions, caption styles and cards, then plan the reel with them.
+A reference that reads more than one way gets 2-3 concepts with 5-second samples on their video and a cost line first (`scripts/ref_concepts.py`, step 4 of reference.md); they pick, then the reel is planned.
 
 ## Own motion design on phrases
 Besides the template cards, the person can ask for their own motion on a phrase or sentence: over the video, or a full-screen takeover that covers them for a few seconds. Offer it in the graphics plan where a line deserves it; they decide.
